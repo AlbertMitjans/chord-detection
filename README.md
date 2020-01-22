@@ -1,1 +1,1 @@
-# chord-detection
+# Chord detection
