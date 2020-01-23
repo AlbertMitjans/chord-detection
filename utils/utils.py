@@ -5,12 +5,11 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torchvision.transforms as transforms
-from scipy.ndimage.measurements import center_of_mass, label
-from skimage.feature import peak_local_max
 
 from dataset.dataset import CornersDataset
 from loss.loss import JointsMSELoss
 from models.Stacked_Hourglass import HourglassNet, Bottleneck
+from models.my_model import MyModel
 from transforms.rand_crop import RandomCrop
 from transforms.rand_horz_flip import HorizontalFlip
 
@@ -45,22 +44,20 @@ def init_model_and_dataset(depth, directory, lr=5e-6, weight_decay=0, momentum=0
     # define the model
     model = HourglassNet(Bottleneck)
     model = nn.DataParallel(model).cuda()
+    model2 = MyModel()
 
     # define loss function (criterion) and optimizer
     criterion = JointsMSELoss().cuda()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    checkpoint = torch.load("checkpoints/hg_s2_b1/model_best.pth.tar")
+    checkpoint = torch.load("weights/hg_s2_b1/model_best.pth.tar")
 
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
 
-    model = nn.Sequential(model, nn.Conv2d(16, 1, kernel_size=1).cuda())
+    model = nn.Sequential(model, model2)
 
-    if depth:
-        end_file = '.tif'
-    if not depth:
-        end_file = '.png'
+    end_file = '.png'
 
     cudnn.benchmark = True
 

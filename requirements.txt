@@ -1,6 +1,6 @@
 pandas
 xlrd
-pytorch
 torchvision
+pytorch
 matplotlib
 scikit-image
