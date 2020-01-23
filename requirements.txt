@@ -1,0 +1,6 @@
+pandas
+xlrd
+pytorch
+torchvision
+matplotlib
+scikit-image
