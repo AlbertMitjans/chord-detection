@@ -7,10 +7,10 @@ from train import train
 from test import test
 
 
-def main(train_flag, evaluate_val, save_imgs, depth, ckpt, num_epochs, batch_size):
+def main(train_flag, evaluate_val, ckpt, num_epochs, batch_size):
 
     if train_flag:
-        train(ckpt, depth, num_epochs, batch_size)
+        train(ckpt, num_epochs, batch_size)
 
     elif not train_flag:
         num_workers = 0
@@ -54,13 +54,11 @@ if __name__ == "__main__":
     parser.add_argument("--train", type=str2bool, default=True, help="if True/False, training/testing will be implemented")
     parser.add_argument("--val_data", type=str2bool, default=True, help="if True/False, all/validation data will be used "
                                                                     "for testing")
-    parser.add_argument("--save_imgs", type=str2bool, default=True, help="if True, output imgs will be saved")
     parser.add_argument("--batch_size", type=int, default=1, help="size of each image batch")
-    parser.add_argument("--depth", type=str2bool, default=True, help="if True/False, depth/RGB images will be used")
     parser.add_argument("--ckpt", type=str, default=None, help="path to ckpt file")
     parser.add_argument("--num_epochs", type=int, default=200, help="number of epochs")
     opt = parser.parse_args()
     print(opt)
 
-    main(train_flag=opt.train, evaluate_val=opt.val_data, save_imgs=opt.save_imgs, depth=opt.depth, ckpt=opt.ckpt,
+    main(train_flag=opt.train, evaluate_val=opt.val_data, ckpt=opt.ckpt,
          num_epochs=opt.num_epochs, batch_size=opt.batch_size)

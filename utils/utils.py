@@ -40,14 +40,14 @@ def adjust_learning_rate(optimizer, epoch, lr):
         param_group['lr'] = lr
 
 
-def init_model_and_dataset(depth, directory, lr=5e-6, weight_decay=0, momentum=0):
+def init_model_and_dataset(directory, lr=5e-6, weight_decay=0, momentum=0):
     # define the model
     model = HourglassNet(Bottleneck)
     model = nn.DataParallel(model).cuda()
     model2 = MyModel()
 
     # define loss function (criterion) and optimizer
-    criterion = JointsMSELoss().cuda()
+    criterion = nn.CrossEntropyLoss().cuda()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
     checkpoint = torch.load("weights/hg_s2_b1/model_best.pth.tar")
@@ -64,15 +64,15 @@ def init_model_and_dataset(depth, directory, lr=5e-6, weight_decay=0, momentum=0
     random_crop = RandomCrop(size=0.8)
     horizontal_flip = HorizontalFlip()
 
-    train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file, depth=depth,
+    train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file,
                                    transform=transforms.Compose([random_crop, horizontal_flip]))
-    val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file, depth=depth,
+    val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file,
                                  transform=transforms.Compose([random_crop, horizontal_flip]))
 
     return model, train_dataset, val_dataset, criterion, optimizer
 
 
-def accuracy(corners, output, target, global_recall, global_precision):
+def accuracy(output, target, accuracy):
     """Computes the precision@k for the specified values of k"""
     batch_size = target.size(0)
 
@@ -81,11 +81,9 @@ def accuracy(corners, output, target, global_recall, global_precision):
     target = target.cpu().detach().numpy()
 
     for batch_unit in range(batch_size):  # for each batch element
-        recall, precision, max_out = multiple_gaussians(output[batch_unit], target[batch_unit])
+        tab_out = []
+        for i in range(output.shape[1]):
+            tab_out.append(output[batch_size][i].index(np.max(output[batch_size][i])))
 
-        global_recall.update(recall)
-        for i, (a, b) in enumerate(sorted(corners[batch_unit], key=lambda x: x[0], reverse=True)):
-            if a != 0 and b != 0:
-                global_precision[i].update(precision[i])
-
-    return max_out
+        acc = tab_out == target
+        accuracy.update(acc.sum()/6)

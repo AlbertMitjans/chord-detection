@@ -13,7 +13,7 @@ from transforms.pad_to_square import pad_to_square
 class CornersDataset(Dataset):
     def __init__(self, root_dir, end_file, transform=None):
         self.img_names = []
-        self.chords = pd.read_csv('targets.txt')
+        self.chords = pd.read_csv(os.path.abspath(os.path.join(os.getcwd(), os.pardir, 'targets.txt')))
         self.tabs = {}
         self.end_file = end_file
         self.root_dir = root_dir
@@ -22,13 +22,13 @@ class CornersDataset(Dataset):
         self.load_data()
 
     def load_data(self):
-        for root, dirs, files in os.walk(os.path.join(self.root_dir, 'images')):
+        for root, dirs, files in os.walk(self.root_dir):
             files.sort(key=natural_keys)
             for file in files:
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
 
-        chord_dict = pd.read_excel('guitar_chords.xlsx')
+        chord_dict = pd.read_excel(os.path.abspath(os.path.join(os.getcwd(), os.pardir, 'targets.txt')))
 
         for i in range(chord_dict.shape[0]):
             try:

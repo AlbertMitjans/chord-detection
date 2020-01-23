@@ -10,13 +10,13 @@ from utils.utils import init_model_and_dataset, adjust_learning_rate, AverageMet
 from utils.tb_visualizer import Logger
 
 
-def train(ckpt, depth, num_epochs, batch_size):
+def train(ckpt, num_epochs, batch_size):
     num_workers = 0
     lr = 5e-4
     momentum = 0
     weight_decay = 0
 
-    directory = 'data/'
+    directory = 'dataset/'
     start_epoch = 0
     start_loss = 0
     print_freq = 100
@@ -25,7 +25,7 @@ def train(ckpt, depth, num_epochs, batch_size):
 
     logger = Logger('./logs')
 
-    model, train_dataset, val_dataset, criterion_grid, optimizer = init_model_and_dataset(depth, directory, lr,
+    model, train_dataset, val_dataset, criterion_grid, optimizer = init_model_and_dataset(directory, lr,
                                                                                           weight_decay, momentum)
     val_dataset.evaluate()
 
@@ -51,8 +51,7 @@ def train(ckpt, depth, num_epochs, batch_size):
         data_time = AverageMeter()
         train_loss = AverageMeter()
 
-        train_recall = AverageMeter()
-        train_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
+        train_accuracy = AverageMeter()
 
         train_loss.update(start_loss)
 
@@ -65,16 +64,14 @@ def train(ckpt, depth, num_epochs, batch_size):
             # measure data loading time
             data_time.update(time.time() - end)
             input = data['image'].float().cuda()
-            grid = data['grid'].float().cuda()
-            corners = data['corners']
+            tab = data['tab'].float().cuda()
 
             # compute output
             output = model(input).split(input.shape[0], dim=0)
-            loss = sum(i*criterion_grid(o, grid) for i, o in enumerate(output))
+            loss = sum(i*criterion_grid(o, tab) for i, o in enumerate(output))
 
             # measure accuracy and record loss
-            accuracy(corners=corners, output=output[-1].data, target=grid, global_recall=train_recall,
-                     global_precision=train_precision)
+            accuracy(output=output[-1].data, target=tab, accuracy=train_accuracy)
             train_loss.update(loss.item())
 
             # compute gradient and do SGD step
@@ -89,11 +86,9 @@ def train(ckpt, depth, num_epochs, batch_size):
             if data_idx % print_freq == 0 and data_idx != 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
                       'Loss.avg: {loss.avg:.4f}\t'
-                      'Recall(%): {top1:.3f}\t'
-                      'Precision num. corners (%): ({top2:.3f}, {top3:.3f}, {top4:.3f}, {top5:.3f})\t'.format(
+                      'Accuracy(%): {top1:.3f}\t'.format(
                     epoch, data_idx, len(train_loader), loss=train_loss,
-                    top1=train_recall.avg * 100, top2=train_precision[0].avg * 100, top3=train_precision[1].avg * 100,
-                    top4=train_precision[2].avg * 100, top5=train_precision[3].avg * 100))
+                    top1=train_accuracy.avg * 100))
 
         if epoch % evaluation_interval == 0:
             # evaluate on validation set
