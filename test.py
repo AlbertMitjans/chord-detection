@@ -5,7 +5,7 @@ import time
 from utils.utils import AverageMeter, accuracy
 
 
-def test(val_loader, model, save_imgs=False):
+def test(val_loader, model):
     batch_time = AverageMeter()
     eval_accuracy = AverageMeter()
 
@@ -15,8 +15,8 @@ def test(val_loader, model, save_imgs=False):
     end = time.time()
 
     for data_idx, data in enumerate(val_loader):
-        input = data['image'].float().cuda()
-        target = data['grid'].float().cuda()
+        input = data['image'].float()
+        target = data['grid'].float()
         corners = data['corners']
 
         # compute output

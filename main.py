@@ -35,7 +35,7 @@ def main(train_flag, evaluate_val, ckpt, num_epochs, batch_size):
         val_loader = torch.utils.data.DataLoader(transformed_dataset, batch_size=batch_size, shuffle=False,
                                                  num_workers=num_workers, pin_memory=True)
 
-        test(val_loader, model, save_imgs=save_imgs)
+        test(val_loader, model)
 
 
 if __name__ == "__main__":

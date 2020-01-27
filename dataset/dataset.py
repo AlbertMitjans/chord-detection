@@ -13,7 +13,7 @@ from transforms.pad_to_square import pad_to_square
 class CornersDataset(Dataset):
     def __init__(self, root_dir, end_file, transform=None):
         self.img_names = []
-        self.chords = pd.read_csv(os.path.abspath(os.path.join(os.getcwd(), os.pardir, 'targets.txt')))
+        self.chords = pd.read_csv(os.path.join(os.getcwd(), 'dataset', 'targets.txt')).values.tolist()
         self.tabs = {}
         self.end_file = end_file
         self.root_dir = root_dir
@@ -28,7 +28,7 @@ class CornersDataset(Dataset):
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
 
-        chord_dict = pd.read_excel(os.path.abspath(os.path.join(os.getcwd(), os.pardir, 'targets.txt')))
+        chord_dict = pd.read_excel(os.path.join(os.getcwd(), 'dataset', 'GuitarChords.xlsx'))
 
         for i in range(chord_dict.shape[0]):
             try:
@@ -37,13 +37,13 @@ class CornersDataset(Dataset):
                 num_strings = 0
 
             if num_strings < 6:
-                self.tabs.setdefault(chord_dict['Chord'][i][0], []).append(chord_dict['Fret'][i])
+                self.tabs.setdefault(chord_dict['Chord'][i], []).append(chord_dict['Fret'][i])
 
     def evaluate(self):
         self.validation = True
 
     def __len__(self):
-        return len(self.chords)
+        return len(self.img_names)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -51,14 +51,13 @@ class CornersDataset(Dataset):
 
         img_name = os.path.join(self.root_dir,
                                 self.img_names[idx])
-        img_number = os.path.basename(img_name)[:-4]
+        img_number = int(os.path.basename(img_name)[5:-4])
 
-        chord = self.chords[idx].astype(int)
+        chord = self.chords[img_number][0]
 
-        tab = np.array([self.tabs[chord]])
-
+        tab = torch.Tensor(self.tabs[chord]).type(torch.LongTensor)
         image = Image.open(img_name)
-        image = transforms.ToTensor()(image).type(torch.float32)
+        image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
         sample = {'image': image, 'chord': chord, 'tab': tab, 'img_num': img_number}
 
@@ -68,9 +67,8 @@ class CornersDataset(Dataset):
 
         sample['image'] = pad_to_square(sample['image'])
 
-        '''fig, ax = plt.subplots(1, 2)
-        ax[0].imshow(sample['grid'][0], cmap='gray')
-        ax[1].imshow(sample['image'][0], cmap='gray')
+        '''import matplotlib.pyplot as plt
+        plt.imshow(transforms.ToPILImage()(sample['image']))
         plt.show()
         plt.waitforbuttonpress()
         plt.close('all')'''

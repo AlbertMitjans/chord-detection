@@ -63,15 +63,15 @@ def train(ckpt, num_epochs, batch_size):
 
             # measure data loading time
             data_time.update(time.time() - end)
-            input = data['image'].float().cuda()
-            tab = data['tab'].float().cuda()
+            input = data['image'].float()
+            tab = data['tab']
 
             # compute output
-            output = model(input).split(input.shape[0], dim=0)
-            loss = sum(i*criterion_grid(o, tab) for i, o in enumerate(output))
+            output = model(input).transpose(1, 2)
+            loss = criterion_grid(output, tab)
 
             # measure accuracy and record loss
-            accuracy(output=output[-1].data, target=tab, accuracy=train_accuracy)
+            accuracy(output=output.data, target=tab, accuracy=train_accuracy)
             train_loss.update(loss.item())
 
             # compute gradient and do SGD step

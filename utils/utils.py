@@ -12,6 +12,7 @@ from models.Stacked_Hourglass import HourglassNet, Bottleneck
 from models.my_model import MyModel
 from transforms.rand_crop import RandomCrop
 from transforms.rand_horz_flip import HorizontalFlip
+from transforms.rescale import Rescale
 
 
 class AverageMeter(object):
@@ -43,31 +44,32 @@ def adjust_learning_rate(optimizer, epoch, lr):
 def init_model_and_dataset(directory, lr=5e-6, weight_decay=0, momentum=0):
     # define the model
     model = HourglassNet(Bottleneck)
-    model = nn.DataParallel(model).cuda()
+    model = nn.DataParallel(model)
     model2 = MyModel()
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda()
+    criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    checkpoint = torch.load("weights/hg_s2_b1/model_best.pth.tar")
+    checkpoint = torch.load("weights/hg_s2_b1/model_best.pth.tar", map_location=torch.device('cpu'))
 
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
 
     model = nn.Sequential(model, model2)
 
-    end_file = '.png'
+    end_file = '.jpg'
 
     cudnn.benchmark = True
 
     random_crop = RandomCrop(size=0.8)
     horizontal_flip = HorizontalFlip()
+    rescale = Rescale((300, 300))
 
     train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file,
-                                   transform=transforms.Compose([random_crop, horizontal_flip]))
+                                   transform=transforms.Compose([random_crop, horizontal_flip, rescale]))
     val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file,
-                                 transform=transforms.Compose([random_crop, horizontal_flip]))
+                                 transform=transforms.Compose([random_crop, horizontal_flip, rescale]))
 
     return model, train_dataset, val_dataset, criterion, optimizer
 
@@ -77,13 +79,10 @@ def accuracy(output, target, accuracy):
     batch_size = target.size(0)
 
     # we send the data to CPU
-    output = output.cpu().detach().numpy().clip(0)
-    target = target.cpu().detach().numpy()
+    output = output.cpu().detach()
+    target = target.cpu().detach()
 
     for batch_unit in range(batch_size):  # for each batch element
-        tab_out = []
-        for i in range(output.shape[1]):
-            tab_out.append(output[batch_size][i].index(np.max(output[batch_size][i])))
-
+        tab_out = torch.max(output[batch_unit], dim=0)[1]
         acc = tab_out == target
         accuracy.update(acc.sum()/6)

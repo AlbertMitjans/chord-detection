@@ -174,7 +174,8 @@ class HourglassNet(nn.Module):
             y = self.res[i](y)
             y = self.fc[i](y)
             score = self.score[i](y)
-            out.append(score)
+            if i == self.num_stacks-1:
+                out.append(score)
 
             if i < self.num_stacks-1:
                 fc_ = self.fc_[i](y)
