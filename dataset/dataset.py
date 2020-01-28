@@ -56,7 +56,10 @@ class CornersDataset(Dataset):
         chord = self.chords[img_number][0]
 
         tab = torch.Tensor(self.tabs[chord]).type(torch.LongTensor)
-        image = Image.open(img_name)
+        try:
+            image = Image.open(img_name)
+        except OSError:
+            pass
         image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
         sample = {'image': image, 'chord': chord, 'tab': tab, 'img_num': img_number}
