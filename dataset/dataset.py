@@ -13,7 +13,7 @@ from transforms.pad_to_square import pad_to_square
 class CornersDataset(Dataset):
     def __init__(self, root_dir, end_file, transform=None):
         self.img_names = []
-        self.chords = pd.read_csv(os.path.join(os.getcwd(), 'dataset', 'targets.txt')).values.tolist()
+        self.chords = pd.read_csv(os.path.join(os.getcwd(), 'dataset', 'targets.csv')).values.tolist()
         self.tabs = {}
         self.end_file = end_file
         self.root_dir = root_dir
