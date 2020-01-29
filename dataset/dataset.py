@@ -28,7 +28,7 @@ class CornersDataset(Dataset):
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
 
-        chord_dict = pd.read_excel(os.path.join(os.getcwd(), 'dataset', 'GuitarChords.xlsx'))
+        chord_dict = pd.read_excel(os.path.join(os.getcwd(), 'dataset', 'guitar_chords.xlsx'))
 
         for i in range(chord_dict.shape[0]):
             try:
@@ -53,13 +53,17 @@ class CornersDataset(Dataset):
                                 self.img_names[idx])
         img_number = int(os.path.basename(img_name)[5:-4])
 
-        chord = self.chords[img_number][0]
-
-        tab = torch.Tensor(self.tabs[chord]).type(torch.LongTensor)
         try:
-            image = Image.open(img_name)
-        except OSError:
-            pass
+            chord = self.chords[img_number-1][0]
+
+        except IndexError:
+            print('all]')
+
+        tab = torch.Tensor(self.tabs[chord])
+        tab = one_hot_label(tab)
+
+        image = Image.open(img_name)
+
         image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
         sample = {'image': image, 'chord': chord, 'tab': tab, 'img_num': img_number}
@@ -92,21 +96,10 @@ def natural_keys(text):
     return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
-def get_tabs(directory, chord_dict):
-    chords_tab = {}
+def one_hot_label(tabs):
+    output = torch.zeros((6, 25))
+    for idx, value in enumerate(tabs):
+        if value != -1:
+            output[idx, int(value)] = 1
 
-    for i in range(chord_dict.shape[0]):
-        try:
-            num_strings = len(chords_tab[chord_dict['Chord'][i]])
-        except KeyError:
-            num_strings = 0
-
-        if num_strings < 6:
-            chords_tab.setdefault(chord_dict['Chord'][i], []).append(chord_dict['Fret'][i])
-
-    target_chords = pd.read_csv('targets.txt')
-
-    target_tabs = []
-
-    for i in target_chords.values:
-        target_tabs.append(chords_tab[i[0]])
+    return output

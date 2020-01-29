@@ -2,7 +2,6 @@ import torch
 import torch.utils.data
 from utils.utils import init_model_and_dataset
 import argparse
-
 from train import train
 from test import test
 
@@ -56,7 +55,7 @@ if __name__ == "__main__":
                                                                     "for testing")
     parser.add_argument("--batch_size", type=int, default=1, help="size of each image batch")
     parser.add_argument("--ckpt", type=str, default=None, help="path to ckpt file")
-    parser.add_argument("--num_epochs", type=int, default=200, help="number of epochs")
+    parser.add_argument("--num_epochs", type=int, default=500, help="number of epochs")
     opt = parser.parse_args()
     print(opt)
 

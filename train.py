@@ -19,7 +19,7 @@ def train(ckpt, num_epochs, batch_size):
     directory = 'dataset/'
     start_epoch = 0
     start_loss = 0
-    print_freq = 100
+    print_freq = 20
     checkpoint_interval = 1
     evaluation_interval = 1
 
@@ -63,11 +63,11 @@ def train(ckpt, num_epochs, batch_size):
 
             # measure data loading time
             data_time.update(time.time() - end)
-            input = data['image'].float()
-            tab = data['tab']
+            input = data['image'].float().cuda()
+            tab = data['tab'].float().cuda()
 
             # compute output
-            output = model(input).transpose(1, 2)
+            output = model(input)
             loss = criterion_grid(output, tab)
 
             # measure accuracy and record loss

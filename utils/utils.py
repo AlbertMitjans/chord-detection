@@ -43,12 +43,12 @@ def adjust_learning_rate(optimizer, epoch, lr):
 
 def init_model_and_dataset(directory, lr=5e-6, weight_decay=0, momentum=0):
     # define the model
-    model = HourglassNet(Bottleneck)
+    model = HourglassNet(Bottleneck).cuda()
     model = nn.DataParallel(model)
-    model2 = MyModel()
+    model2 = MyModel().cuda()
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
     checkpoint = torch.load("weights/hg_s2_b1/model_best.pth.tar", map_location=torch.device('cpu'))
@@ -83,6 +83,7 @@ def accuracy(output, target, accuracy):
     target = target.cpu().detach()
 
     for batch_unit in range(batch_size):  # for each batch element
-        tab_out = torch.max(output[batch_unit], dim=0)[1]
-        acc = tab_out == target
+        tab_out = torch.max(output[batch_unit], dim=1)[1]
+        tab_in = torch.max(target[batch_unit], dim=1)[1]
+        acc = tab_out == tab_in
         accuracy.update(acc.sum()/6)

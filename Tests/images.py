@@ -17,21 +17,15 @@ def natural_keys(text):
     '''
     return [atoi(c) for c in re.split(r'(\d+)', text)]
 
-w
-directory = os.getcwd()
 
-chords = pd.read_csv('targets.txt', header=None)
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
 
-train_labels = []
-val_labels = []
-w
 for root, dirs, files in os.walk(os.path.join(directory, 'images')):
     files.sort(key=natural_keys)
     for i, file in enumerate(files):
         x = np.random.random()
         if x < 0.8:
-            shutil.move(os.path.join(directory, 'images', file), os.path.join(directory, 'train_dataset', file))
+            shutil.copy(os.path.join(directory, 'images', file), os.path.join(directory, 'train_dataset', file))
         else:
-            shutil.move(os.path.join(directory, 'images', file), os.path.join(directory, 'val_dataset', file))
+            shutil.copy(os.path.join(directory, 'images', file), os.path.join(directory, 'val_dataset', file))
 
-np.savetxt('targets.csv', chords, delimiter=',', fmt='%s')
