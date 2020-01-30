@@ -15,15 +15,14 @@ def test(val_loader, model):
     end = time.time()
 
     for data_idx, data in enumerate(val_loader):
-        input = data['image'].float()
-        target = data['grid'].float()
-        corners = data['corners']
+        input = data['image'].float().cuda()
+        target = data['tab'].float().cuda()
 
         # compute output
-        output = model(input).split(input.shape[0], dim=0)
+        output = model(input)
 
         # measure accuracy
-        accuracy(output=output[-1].data, target=target, accuracy=eval_accuracy)
+        accuracy(output=output.data, target=target, accuracy=eval_accuracy)
 
         # measure elapsed time
         batch_time.update(time.time() - end)

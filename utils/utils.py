@@ -62,7 +62,7 @@ def init_model_and_dataset(directory, lr=5e-6, weight_decay=0, momentum=0):
 
     cudnn.benchmark = True
 
-    random_crop = RandomCrop(size=0.8)
+    random_crop = RandomCrop(size=0.9)
     horizontal_flip = HorizontalFlip()
     rescale = Rescale((300, 300))
 
@@ -80,10 +80,16 @@ def accuracy(output, target, accuracy):
 
     # we send the data to CPU
     output = output.cpu().detach()
+    flag = output < 0.1
+    output[flag] = 0
     target = target.cpu().detach()
 
     for batch_unit in range(batch_size):  # for each batch element
         tab_out = torch.max(output[batch_unit], dim=1)[1]
         tab_in = torch.max(target[batch_unit], dim=1)[1]
         acc = tab_out == tab_in
-        accuracy.update(acc.sum()/6)
+        accuracy.update(acc.sum()/6.)
+
+    print('Output   ', output)
+    print('Tab out   ', tab_out)
+    print('Tab in   ', tab_in)

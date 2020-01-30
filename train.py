@@ -12,7 +12,7 @@ from utils.tb_visualizer import Logger
 
 def train(ckpt, num_epochs, batch_size):
     num_workers = 0
-    lr = 5e-4
+    lr = 5e-3
     momentum = 0
     weight_decay = 0
 
@@ -27,7 +27,6 @@ def train(ckpt, num_epochs, batch_size):
 
     model, train_dataset, val_dataset, criterion_grid, optimizer = init_model_and_dataset(directory, lr,
                                                                                           weight_decay, momentum)
-    val_dataset.evaluate()
 
     # load the pretrained network
     if ckpt is not None:
@@ -72,6 +71,12 @@ def train(ckpt, num_epochs, batch_size):
 
             # measure accuracy and record loss
             accuracy(output=output.data, target=tab, accuracy=train_accuracy)
+
+            import matplotlib.pyplot as plt
+            import torchvision.transforms as transforms
+            plt.imshow(transforms.ToPILImage()(input[0].cpu()))
+            plt.show()
+
             train_loss.update(loss.item())
 
             # compute gradient and do SGD step
@@ -94,16 +99,12 @@ def train(ckpt, num_epochs, batch_size):
             # evaluate on validation set
             print('Train set:  ')
 
-            t_recall, t_precision = test(train_loader, model)
+            t_accuracy = test(train_loader, model)
             print('Validation set:  ')
-            e_recall, e_precision = test(val_loader, model)
+            e_accuracy = test(val_loader, model)
 
             # 1. Log scalar values (scalar summary)
-            info = {'Train Loss': train_loss.avg, 'Train Recall': t_recall, 'Train Precision 1': t_precision[0],
-                    'Train Precision 2': t_precision[1], 'Train Precision 3': t_precision[2],
-                    'Train Precision 4': t_precision[3], 'Validation Recall': e_recall,
-                    'Validation Precision 1': e_precision[0], 'Validation Precision 2': e_precision[1],
-                    'Validation Precision 3': e_precision[2], 'Validation Precision 4': e_precision[3]}
+            info = {'Train Loss': train_loss.avg, 'Train Accuracy': t_accuracy, 'Validation Accuracy': e_accuracy}
 
             for tag, value in info.items():
                 logger.scalar_summary(tag, value, epoch)
@@ -115,7 +116,7 @@ def train(ckpt, num_epochs, batch_size):
                 logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), epoch)
 
             # 3. Log training images (image summary)
-            info = {'images': input.view(-1, 495, 495).cpu().numpy()}
+            info = {'images': input.view(-1, 300, 300).cpu().numpy()}
 
             for tag, images in info.items():
                 logger.image_summary(tag, images, epoch)
@@ -127,4 +128,4 @@ def train(ckpt, num_epochs, batch_size):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': train_loss.avg
-            }, "checkpoints/hg_ckpt_{0}.pth".format(epoch))
+            }, "weights/hg_ckpt_{0}.pth".format(epoch))
