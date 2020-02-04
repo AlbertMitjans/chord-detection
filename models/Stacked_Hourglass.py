@@ -159,6 +159,8 @@ class HourglassNet(nn.Module):
             )
 
     def forward(self, x):
+        shape = x.shape[2:]
+
         out = []
         x = self.conv1(x)
         x = self.bn1(x)
@@ -174,8 +176,8 @@ class HourglassNet(nn.Module):
             y = self.res[i](y)
             y = self.fc[i](y)
             score = self.score[i](y)
-            if i == self.num_stacks-1:
-                out.append(score)
+            end_score = F.interpolate(score, shape)
+            out.append(end_score)
 
             if i < self.num_stacks-1:
                 fc_ = self.fc_[i](y)

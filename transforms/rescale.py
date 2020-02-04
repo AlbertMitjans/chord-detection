@@ -16,6 +16,7 @@ class Rescale(object):
 
     def __call__(self, sample):
         image = sample['image']
+        grid = sample['grid']
 
         h, w = image.shape[-2:]
         if isinstance(self.output_size, int):
@@ -31,7 +32,9 @@ class Rescale(object):
         resize = transform.Resize((new_h, new_w))
 
         img = transform.ToTensor()(resize(transform.ToPILImage()(image)))
+        grid = transform.ToTensor()(resize(transform.ToPILImage()(grid)))
 
         sample['image'] = img
+        sample['grid'] = grid
 
         return sample

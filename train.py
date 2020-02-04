@@ -12,11 +12,11 @@ from utils.tb_visualizer import Logger
 
 def train(ckpt, num_epochs, batch_size, device):
     num_workers = 0
-    lr = 5e-3
+    lr = 5e-4
     momentum = 0
     weight_decay = 0
 
-    directory = 'dataset/'
+    directory = 'data/'
     start_epoch = 0
     start_loss = 0
     print_freq = 20
@@ -50,7 +50,8 @@ def train(ckpt, num_epochs, batch_size, device):
         data_time = AverageMeter()
         train_loss = AverageMeter()
 
-        train_accuracy = AverageMeter()
+        train_recall = AverageMeter()
+        train_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
 
         train_loss.update(start_loss)
 
@@ -62,22 +63,18 @@ def train(ckpt, num_epochs, batch_size, device):
 
             # measure data loading time
             data_time.update(time.time() - end)
-            input = data['image'].float()
-            input.to(device)
-            tab = data['tab'].float().cuda()
-            tab.to(device)
+            input = data['image'].float().to(device)
+            grid = data['grid'].float().to(device)
+            corners = data['corners']
 
             # compute output
-            output = model(input)
-            loss = criterion_grid(output, tab)
+            output = model(input).split(input.shape[0], dim=0)
+
+            loss = sum(i*criterion_grid(o, grid) for i, o in enumerate(output))
 
             # measure accuracy and record loss
-            accuracy(output=output.data, target=tab, accuracy=train_accuracy)
-
-            '''import matplotlib.pyplot as plt
-            import torchvision.transforms as transforms
-            plt.imshow(transforms.ToPILImage()(input[0].cpu()))
-            plt.show()'''
+            accuracy(corners=corners, output=output[-1].data, target=grid, global_recall=train_recall,
+                     global_precision=train_precision)
 
             train_loss.update(loss.item())
 
@@ -93,20 +90,26 @@ def train(ckpt, num_epochs, batch_size, device):
             if data_idx % print_freq == 0 and data_idx != 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
                       'Loss.avg: {loss.avg:.4f}\t'
-                      'Accuracy(%): {top1:.3f}\t'.format(
+                      'Recall(%): {top1:.3f}\t'
+                      'Precision num. corners (%): ({top2:.3f}, {top3:.3f}, {top4:.3f}, {top5:.3f})\t'.format(
                     epoch, data_idx, len(train_loader), loss=train_loss,
-                    top1=train_accuracy.avg * 100))
+                    top1=train_recall.avg * 100, top2=train_precision[0].avg * 100, top3=train_precision[1].avg * 100,
+                    top4=train_precision[2].avg * 100, top5=train_precision[3].avg * 100))
 
         if epoch % evaluation_interval == 0:
             # evaluate on validation set
             print('Train set:  ')
 
-            t_accuracy = test(train_loader, model, device)
+            t_recall, t_precision = test(train_loader, model, device)
             print('Validation set:  ')
-            e_accuracy = test(val_loader, model, device)
+            e_recall, e_precision = test(val_loader, model, device)
 
             # 1. Log scalar values (scalar summary)
-            info = {'Train Loss': train_loss.avg, 'Train Accuracy': t_accuracy, 'Validation Accuracy': e_accuracy}
+            info = {'Train Loss': train_loss.avg, 'Train Recall': t_recall, 'Train Precision 1': t_precision[0],
+                    'Train Precision 2': t_precision[1], 'Train Precision 3': t_precision[2],
+                    'Train Precision 4': t_precision[3], 'Validation Recall': e_recall,
+                    'Validation Precision 1': e_precision[0], 'Validation Precision 2': e_precision[1],
+                    'Validation Precision 3': e_precision[2], 'Validation Precision 4': e_precision[3]}
 
             for tag, value in info.items():
                 logger.scalar_summary(tag, value, epoch)
@@ -130,4 +133,4 @@ def train(ckpt, num_epochs, batch_size, device):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': train_loss.avg
-            }, "weights/hg_ckpt_{0}.pth".format(epoch))
+            }, "checkpoints/hg_ckpt_{0}.pth".format(epoch))

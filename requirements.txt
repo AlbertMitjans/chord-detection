@@ -1,7 +1,8 @@
-pandas
-xlrd
+torchvision
 pytorch
-matplotlib
-scikit-image
 pillow==6.1
+matplotlib
+opencv
+pandas
 tensorflow==1.13.1
+scikit-image
