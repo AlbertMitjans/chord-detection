@@ -41,22 +41,24 @@ def adjust_learning_rate(optimizer, epoch, lr):
         param_group['lr'] = lr
 
 
-def init_model_and_dataset(directory, lr=5e-6, weight_decay=0, momentum=0):
+def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=0):
     # define the model
-    model = HourglassNet(Bottleneck).cuda()
-    model = nn.DataParallel(model)
-    model2 = MyModel().cuda()
+    model = HourglassNet(Bottleneck)
+    model = nn.DataParallel(model).to(device)
+    model2 = MyModel()
 
     # define loss function (criterion) and optimizer
     criterion = nn.MSELoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    checkpoint = torch.load("weights/hg_s2_b1/model_best.pth.tar", map_location=torch.device('cpu'))
+    checkpoint = torch.load("weights/hg_s2_b1/model_best.pth.tar", map_location=torch.device(device))
 
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
 
     model = nn.Sequential(model, model2)
+    model = nn.DataParallel(model)
+    model.to(device)
 
     end_file = '.jpg'
 
@@ -90,6 +92,6 @@ def accuracy(output, target, accuracy):
         acc = tab_out == tab_in
         accuracy.update(acc.sum()/6.)
 
-    print('Output   ', output)
+    '''print('Output   ', output)
     print('Tab out   ', tab_out)
-    print('Tab in   ', tab_in)
+    print('Tab in   ', tab_in)'''

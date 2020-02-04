@@ -5,7 +5,7 @@ import time
 from utils.utils import AverageMeter, accuracy
 
 
-def test(val_loader, model):
+def test(val_loader, model, device):
     batch_time = AverageMeter()
     eval_accuracy = AverageMeter()
 
@@ -15,8 +15,10 @@ def test(val_loader, model):
     end = time.time()
 
     for data_idx, data in enumerate(val_loader):
-        input = data['image'].float().cuda()
+        input = data['image'].float()
+        input.to(device)
         target = data['tab'].float().cuda()
+        target.to(device)
 
         # compute output
         output = model(input)

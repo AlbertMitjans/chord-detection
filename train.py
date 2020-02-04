@@ -10,7 +10,7 @@ from utils.utils import init_model_and_dataset, adjust_learning_rate, AverageMet
 from utils.tb_visualizer import Logger
 
 
-def train(ckpt, num_epochs, batch_size):
+def train(ckpt, num_epochs, batch_size, device):
     num_workers = 0
     lr = 5e-3
     momentum = 0
@@ -25,7 +25,7 @@ def train(ckpt, num_epochs, batch_size):
 
     logger = Logger('./logs')
 
-    model, train_dataset, val_dataset, criterion_grid, optimizer = init_model_and_dataset(directory, lr,
+    model, train_dataset, val_dataset, criterion_grid, optimizer = init_model_and_dataset(directory, device, lr,
                                                                                           weight_decay, momentum)
 
     # load the pretrained network
@@ -62,8 +62,10 @@ def train(ckpt, num_epochs, batch_size):
 
             # measure data loading time
             data_time.update(time.time() - end)
-            input = data['image'].float().cuda()
+            input = data['image'].float()
+            input.to(device)
             tab = data['tab'].float().cuda()
+            tab.to(device)
 
             # compute output
             output = model(input)
@@ -72,10 +74,10 @@ def train(ckpt, num_epochs, batch_size):
             # measure accuracy and record loss
             accuracy(output=output.data, target=tab, accuracy=train_accuracy)
 
-            import matplotlib.pyplot as plt
+            '''import matplotlib.pyplot as plt
             import torchvision.transforms as transforms
             plt.imshow(transforms.ToPILImage()(input[0].cpu()))
-            plt.show()
+            plt.show()'''
 
             train_loss.update(loss.item())
 
@@ -99,9 +101,9 @@ def train(ckpt, num_epochs, batch_size):
             # evaluate on validation set
             print('Train set:  ')
 
-            t_accuracy = test(train_loader, model)
+            t_accuracy = test(train_loader, model, device)
             print('Validation set:  ')
-            e_accuracy = test(val_loader, model)
+            e_accuracy = test(val_loader, model, device)
 
             # 1. Log scalar values (scalar summary)
             info = {'Train Loss': train_loss.avg, 'Train Accuracy': t_accuracy, 'Validation Accuracy': e_accuracy}

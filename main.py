@@ -7,15 +7,16 @@ from test import test
 
 
 def main(train_flag, evaluate_val, ckpt, num_epochs, batch_size):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if train_flag:
-        train(ckpt, num_epochs, batch_size)
+        train(ckpt, num_epochs, batch_size, device)
 
     elif not train_flag:
         num_workers = 0
         directory = 'data/'
 
-        model, train_dataset, val_dataset, _, _ = init_model_and_dataset(directory)
+        model, train_dataset, val_dataset, _, _ = init_model_and_dataset(directory, device=device)
 
         if evaluate_val:
             transformed_dataset = val_dataset
@@ -31,7 +32,7 @@ def main(train_flag, evaluate_val, ckpt, num_epochs, batch_size):
         val_loader = torch.utils.data.DataLoader(transformed_dataset, batch_size=batch_size, shuffle=False,
                                                  num_workers=num_workers, pin_memory=True)
 
-        test(val_loader, model)
+        test(val_loader, model, device)
 
 
 if __name__ == "__main__":
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument("--val_data", type=str2bool, default=True, help="if True/False, all/validation data will be used "
                                                                     "for testing")
     parser.add_argument("--batch_size", type=int, default=1, help="size of each image batch")
-    parser.add_argument("--ckpt", type=str, default='weights/hg_ckpt_99.pth', help="path to ckpt file")
+    parser.add_argument("--ckpt", type=str, default=None, help="path to ckpt file")
     parser.add_argument("--num_epochs", type=int, default=500, help="number of epochs")
     opt = parser.parse_args()
     print(opt)
