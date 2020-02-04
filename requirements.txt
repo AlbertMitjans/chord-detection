@@ -4,5 +4,5 @@ pillow==6.1
 matplotlib
 opencv
 pandas
-tensorflow==1.13.1
+tensorflow==1.15.2
 scikit-image
