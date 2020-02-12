@@ -16,8 +16,9 @@ class RandomCrop(object):
             rc = transforms.RandomCrop((int(image.shape[1] * self.size), int(image.shape[2] * self.size)))
             im_grid = torch.cat((image, grid))
             crop_im_grid = rc(transforms.ToPILImage()(im_grid))
-            im1, im2, im3, crop_grid = Image.Image.split(crop_im_grid)
+            im1, im2, im3, gr1, gr2, gr3, gr4 = Image.Image.split(crop_im_grid)
             crop_image = Image.merge('RGB', (im1, im2, im3))
+            crop_grid = Image.merge('RGBA', (gr1, gr2, gr3, gr4))
             res_image = transforms.ToTensor()(crop_image.resize((image.shape[2], image.shape[1])))
             grid = transforms.ToTensor()(crop_grid.resize((image.shape[2], image.shape[1])))
 

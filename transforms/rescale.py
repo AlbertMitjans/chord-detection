@@ -32,7 +32,7 @@ class Rescale(object):
         resize = transform.Resize((new_h, new_w))
 
         img = transform.ToTensor()(resize(transform.ToPILImage()(image)))
-        grid = transform.ToTensor()(resize(transform.ToPILImage()(grid)))
+        grid = transform.ToTensor()(resize(transform.ToPILImage(mode='RGBX')(grid)))
 
         sample['image'] = img
         sample['grid'] = grid

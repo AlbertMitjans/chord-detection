@@ -50,7 +50,6 @@ def train(ckpt, num_epochs, batch_size, device):
         data_time = AverageMeter()
         train_loss = AverageMeter()
 
-        train_recall = AverageMeter()
         train_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
 
         train_loss.update(start_loss)
@@ -65,7 +64,6 @@ def train(ckpt, num_epochs, batch_size, device):
             data_time.update(time.time() - end)
             input = data['image'].float().to(device)
             grid = data['grid'].float().to(device)
-            corners = data['corners']
 
             # compute output
             output = model(input).split(input.shape[0], dim=0)
@@ -73,7 +71,7 @@ def train(ckpt, num_epochs, batch_size, device):
             loss = sum(i*criterion_grid(o, grid) for i, o in enumerate(output))
 
             # measure accuracy and record loss
-            accuracy(corners=corners, output=output[-1].data, target=grid, global_recall=train_recall,
+            accuracy(output=output[-1].data, target=grid,
                      global_precision=train_precision)
 
             train_loss.update(loss.item())
@@ -90,24 +88,32 @@ def train(ckpt, num_epochs, batch_size, device):
             if data_idx % print_freq == 0 and data_idx != 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
                       'Loss.avg: {loss.avg:.4f}\t'
-                      'Recall(%): {top1:.3f}\t'
                       'Precision num. corners (%): ({top2:.3f}, {top3:.3f}, {top4:.3f}, {top5:.3f})\t'.format(
-                    epoch, data_idx, len(train_loader), loss=train_loss,
-                    top1=train_recall.avg * 100, top2=train_precision[0].avg * 100, top3=train_precision[1].avg * 100,
-                    top4=train_precision[2].avg * 100, top5=train_precision[3].avg * 100))
+                    epoch, data_idx, len(train_loader), loss=train_loss, top2=train_precision[0].avg * 100,
+                    top3=train_precision[1].avg * 100, top4=train_precision[2].avg * 100,
+                    top5=train_precision[3].avg * 100))
+
+                '''import matplotlib.pyplot as plt
+                import torchvision.transforms as transforms
+                for i in range(4):
+                    fig, ax = plt.subplots(1, 3)
+                    ax[0].imshow(grid[0][i].cpu(), cmap='gray')
+                    ax[1].imshow(output[-1][0][i].cpu().detach(), cmap='gray')
+                    ax[2].imshow(transforms.ToPILImage()(input.cpu()[0]))
+                    plt.show()'''
 
         if epoch % evaluation_interval == 0:
             # evaluate on validation set
             print('Train set:  ')
 
-            t_recall, t_precision = test(train_loader, model, device)
+            t_precision = test(train_loader, model, device)
             print('Validation set:  ')
-            e_recall, e_precision = test(val_loader, model, device)
+            e_precision = test(val_loader, model, device)
 
             # 1. Log scalar values (scalar summary)
-            info = {'Train Loss': train_loss.avg, 'Train Recall': t_recall, 'Train Precision 1': t_precision[0],
+            info = {'Train Loss': train_loss.avg, 'Train Precision 1': t_precision[0],
                     'Train Precision 2': t_precision[1], 'Train Precision 3': t_precision[2],
-                    'Train Precision 4': t_precision[3], 'Validation Recall': e_recall,
+                    'Train Precision 4': t_precision[3],
                     'Validation Precision 1': e_precision[0], 'Validation Precision 2': e_precision[1],
                     'Validation Precision 3': e_precision[2], 'Validation Precision 4': e_precision[3]}
 

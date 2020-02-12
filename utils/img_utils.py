@@ -24,7 +24,7 @@ def compute_gradient(image):
 
 
 def local_max(image):
-    max_out = peak_local_max(image, min_distance=19, threshold_rel=0.5, exclude_border=False, indices=False)
+    max_out = peak_local_max(image, min_distance=19, threshold_rel=0.5, threshold_abs=0.1, exclude_border=False, indices=False)
     labels_out = label(max_out)[0]
     max_out = np.array(center_of_mass(max_out, labels_out, range(1, np.max(labels_out) + 1))).astype(np.int)
     max_values = []
@@ -49,21 +49,22 @@ def corner_mask(output):
 
 
 def save_img(input, output, name):
-    corners, max_coord = corner_mask(output)
-    rgb, corners = transforms.ToPILImage()(input), transforms.ToPILImage()(corners)
-    image = Image.blend(rgb, corners, 0.3)
-    plt.ioff()
-    fig, ax = plt.subplots(1, 2)
-    fig.set_size_inches((15, 6))
-    ax[1].axis('off')
-    ax[1].set_title('RGB image')
-    ax[0].axis('off')
-    ax[0].set_title('Network\'s output')
-    ax[0].imshow(output, cmap='afmhot', vmin=0, vmax=1)
-    ax[1].imshow(image)
-    Path('output/').mkdir(parents=True, exist_ok=True)
-    plt.savefig('output/{image}.png'.format(image=name))
-    plt.close('all')
+    for idx, out in enumerate(output):
+        corners, max_coord = corner_mask(out)
+        rgb, corners = transforms.ToPILImage()(input), transforms.ToPILImage()(corners)
+        image = Image.blend(rgb, corners, 0.3)
+        plt.ioff()
+        fig, ax = plt.subplots(1, 2)
+        fig.set_size_inches((15, 6))
+        ax[1].axis('off')
+        ax[1].set_title('RGB image')
+        ax[0].axis('off')
+        ax[0].set_title('Network\'s output')
+        ax[0].imshow(out, cmap='afmhot', vmin=0, vmax=1)
+        ax[1].imshow(image)
+        Path('output/').mkdir(parents=True, exist_ok=True)
+        plt.savefig('output/{image}_{idx}.png'.format(image=name, idx=idx))
+        plt.close('all')
 
 
 def show_corners(image, corners):

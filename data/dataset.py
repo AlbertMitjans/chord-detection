@@ -31,7 +31,7 @@ class CornersDataset(Dataset):
             for file in files:
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
-                if file.endswith(".csv"):
+                if file.endswith("_fingers.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
                     self.corners.append(f)
 
@@ -56,7 +56,7 @@ class CornersDataset(Dataset):
         image = Image.open(img_name)
         image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
-        grid = transforms.ToTensor()(gaussian(image, corners, kernel=int(image.shape[1]/5), target_size=image[0].size())[0]).type(torch.float32)
+        grid = transforms.ToTensor()(gaussian(image, corners, kernel=int(image.shape[1]/5), target_size=image[0].size())).type(torch.float32)
         grid = grid/grid.max()
 
         sample = {'image': image, 'grid': grid, 'img_name': img_number, 'corners': corners}
@@ -90,7 +90,7 @@ def gaussian(image, corners, kernel=20, nsig=5, target_size=(304, 495)):
             ay = b - kern2d.shape[1] // 2
             paste(target[i], kern2d / kern2d.max(), (ay, ax))
 
-    target = np.resize(target.sum(0), (1, target_size[0], target_size[1]))
+    target = np.transpose(target, (1, 2, 0))
 
     return target
 

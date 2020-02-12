@@ -55,7 +55,7 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
 
-    model = nn.Sequential(model, nn.Conv2d(16, 1, kernel_size=1).to(device))
+    model = nn.Sequential(model, nn.Conv2d(16, 4, kernel_size=1).to(device))
     model = nn.DataParallel(model)
     model.to(device)
 
@@ -68,14 +68,14 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     rescale = Rescale((300, 300))
 
     train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file,
-                                   transform=transforms.Compose([random_crop, horizontal_flip, rescale]))
+                                   transform=transforms.Compose([horizontal_flip, rescale]))
     val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file,
-                                 transform=transforms.Compose([random_crop, horizontal_flip, rescale]))
+                                 transform=transforms.Compose([horizontal_flip, rescale]))
 
     return model, train_dataset, val_dataset, criterion, optimizer
 
 
-def accuracy(corners, output, target, global_recall, global_precision):
+def accuracy(output, target, global_precision):
     """Computes the precision@k for the specified values of k"""
     batch_size = target.size(0)
 
@@ -84,63 +84,23 @@ def accuracy(corners, output, target, global_recall, global_precision):
     target = target.cpu().detach().numpy()
 
     for batch_unit in range(batch_size):  # for each batch element
-        recall, precision, max_out = multiple_gaussians(output[batch_unit], target[batch_unit])
+        precision = multiple_gaussians(output[batch_unit], target[batch_unit])
 
-        global_recall.update(recall)
-        for i, (a, b) in enumerate(sorted(corners[batch_unit], key=lambda x: x[0], reverse=True)):
-            if a != -1 and b != -1:
-                global_precision[i].update(precision[i])
-
-    return max_out
+        for i in range(4):
+            global_precision[i].update(precision[i])
 
 
 def multiple_gaussians(output, target):
+    precision = np.array([0, 0, 0, 0]).astype(np.float)
     # we calculate the positions of the max value in output and target
-    max_target = peak_local_max(target[0], min_distance=10, exclude_border=False,
-                                indices=False)  # num_peaks=4)
-    labels_target = label(max_target)[0]
-    max_target = np.array(center_of_mass(max_target, labels_target, range(1, np.max(labels_target) + 1))).astype(np.int)
+    for idx, _ in enumerate(output):
+        max_target = np.array(np.unravel_index(target[idx].argmax(), target[idx].shape))
+        max_output = np.array(np.unravel_index(output[idx].argmax(), output[idx].shape))
 
-    true_p = np.array([0, 0, 0, 0]).astype(np.float)
-    all_p = np.array([0, 0, 0, 0]).astype(np.float)
+        l = np.abs(max_target - max_output)
 
-    max_out = peak_local_max(output[0], min_distance=10, threshold_rel=0.1, exclude_border=False, indices=False)
-    labels_out = label(max_out)[0]
-    max_out = np.array(center_of_mass(max_out, labels_out, range(1, np.max(labels_out) + 1))).astype(np.int)
-
-    max_values = []
-
-    for index in max_out:
-        max_values.append(output[0][index[0]][index[1]])
-
-    max_out = np.array([x for _, x in sorted(zip(max_values, max_out), reverse=True, key=lambda x: x[0])])
-
-    for n in range(min(4, max_target.shape[0])):
-        max_out2 = max_out[:n + 1]
-        for i, (c, d) in enumerate(max_out2):
-            if i < max_out2.shape[0] - 1:
-                dist = np.absolute((max_out2[i + 1][0] - c, max_out2[i + 1][1] - d))
-                if dist[0] <= 8 and dist[1] <= 8:
-                    continue
-            all_p[n] += 1
-            count = 0
-            for (a, b) in max_target:
-                l = np.absolute((a - c, b - d))
-                if l[0] <= 10 and l[1] <= 10:
-                    true_p[n] += 1
-                    count += 1
-                    if count > 1:
-                        all_p[n] += 1
-
-    num_targets = max_target.shape[0]
-
-    if num_targets == 0:
-        recall = 0
-        precision = np.array([0, 0, 0, 0]).astype(np.float)
-    else:
-        recall = true_p[min(4, max_out.shape[0]) - 1] / num_targets
-        precision = true_p / all_p
-        precision[np.isnan(precision)] = 0
+        if l[0] <= 10 and l[1] <= 10:
+            precision[idx] = 1.
 
     '''import matplotlib.pyplot as plt
     import torchvision.transforms as transforms
@@ -151,4 +111,4 @@ def multiple_gaussians(output, target):
 
     print(precision)'''
 
-    return recall, precision, max_out
+    return precision
