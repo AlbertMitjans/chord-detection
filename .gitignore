@@ -1,0 +1,15 @@
+checkpoints/best_ckpt/
+checkpoints/hg_s2_b1/
+data/guitar_chords.xlsx
+data/images
+data/images_2
+data/targets.csv
+data/train_dataset
+data/val_dataset
+loss/__pycache__/
+__pycache__/
+.idea/
+models/__pycache__/
+output/
+transforms/__pycache__/
+utils/__pycache__/
