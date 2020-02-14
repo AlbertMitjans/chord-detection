@@ -3,7 +3,7 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 
-directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data', 'images_2'))
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data', 'images'))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, default=directory, help="path of the directory where the images are")
@@ -25,7 +25,12 @@ while True:
         img = plt.imread(os.path.join(opt.path, 'image{top1}.jpg'.format(top1=i)))
     except FileNotFoundError:
         print('png image')
-        img = plt.imread(os.path.join(opt.path, 'image{top1}.png'.format(top1=i)))
+        try:
+            img = plt.imread(os.path.join(opt.path, 'image{top1}.png'.format(top1=i)))
+        except FileNotFoundError:
+            print('Image {num} not found'.format(num=i))
+            continue
+
     fig, ax = plt.subplots()
     fig.suptitle('Image {top1}'.format(top1=i))
     plt.imshow(img)
@@ -58,18 +63,18 @@ while True:
         else:
             knuckles.append([ix, iy])
 
-    for a in range(2):
+    '''for a in range(2):
         o1 = fig.canvas.mpl_connect('button_press_event', onclick_1)
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o1)
 
     plt.xlim(lines[0][0], lines[1][0])
-    plt.ylim(lines[1][1], lines[0][1])
+    plt.ylim(lines[1][1], lines[0][1])'''
 
-    '''for j in range(4):
+    for j in range(4):
         o2 = fig.canvas.mpl_connect('button_press_event', onclick_2)
         plt.waitforbuttonpress()
-        fig.canvas.mpl_disconnect(o2)'''
+        fig.canvas.mpl_disconnect(o2)
 
     '''for j in range(4):
         o3 = fig.canvas.mpl_connect('button_press_event', onclick_3)
@@ -79,7 +84,7 @@ while True:
     plt.close('all')
 
     #np.savetxt(os.path.join(directory, 'image{top1}_fingers.csv'.format(top1=i)), np.asarray(nails), delimiter=',', fmt='%.3f')
-    np.savetxt(os.path.join(directory, 'image{top1}_hand.csv'.format(top1=i)), np.asarray(lines), delimiter=',',
+    np.savetxt(os.path.join(directory, 'image{top1}_fingers.csv'.format(top1=i)), np.asarray(lines), delimiter=',',
                fmt='%.3f')
     '''np.savetxt(os.path.join(directory, 'image{top1}_knuckles.csv'.format(top1=i)), np.asarray(knuckles), delimiter=',',
                fmt='%.3f')'''

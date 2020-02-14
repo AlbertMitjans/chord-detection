@@ -16,7 +16,7 @@ from transforms.pad_to_square import pad_to_square
 class CornersDataset(Dataset):
     def __init__(self, root_dir, end_file, target_shape=(8, 12, 12), transform=None):
         self.img_names = []
-        self.corners = []
+        self.fingers = []
         self.colors = []
         self.root_dir = root_dir
         self.transform = transform
@@ -31,15 +31,15 @@ class CornersDataset(Dataset):
             for file in files:
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
-                if file.endswith("_fingers.csv"):
+                if file.endswith(".csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
-                    self.corners.append(f)
+                    self.fingers.append(f)
 
     def evaluate(self):
         self.validation = True
 
     def __len__(self):
-        return len(self.corners)
+        return len(self.fingers)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -50,16 +50,16 @@ class CornersDataset(Dataset):
 
         img_number = os.path.basename(img_name)[:-4]
 
-        corners = np.array([self.corners[idx]])
-        corners = corners.astype(int).reshape(-1, 2)
+        fingers = np.array([self.fingers[idx]])
+        fingers = fingers.astype(int).reshape(-1, 2)
 
         image = Image.open(img_name)
         image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
-        grid = transforms.ToTensor()(gaussian(image, corners, kernel=int(image.shape[1]/5), target_size=image[0].size())).type(torch.float32)
+        grid = transforms.ToTensor()(gaussian(image, fingers, kernel=int(image.shape[1]/5), target_size=image[0].size())).type(torch.float32)
         grid = grid/grid.max()
 
-        sample = {'image': image, 'grid': grid, 'img_name': img_number, 'corners': corners}
+        sample = {'image': image, 'grid': grid, 'img_name': img_number, 'fingers': fingers}
 
         if self.transform:
             sample = self.transform(sample)
@@ -68,7 +68,7 @@ class CornersDataset(Dataset):
         sample['grid'] = pad_to_square(sample['grid'])
 
         '''fig, ax = plt.subplots(1, 2)
-        ax[0].imshow(sample['grid'][0], cmap='gray')
+        ax[0].imshow(transforms.ToPILImage()(sample['grid']), cmap='gray')
         ax[1].imshow(transforms.ToPILImage()(sample['image']))
         plt.show()'''
 
@@ -90,7 +90,7 @@ def gaussian(image, corners, kernel=20, nsig=5, target_size=(304, 495)):
             ay = b - kern2d.shape[1] // 2
             paste(target[i], kern2d / kern2d.max(), (ay, ax))
 
-    target = np.transpose(target, (1, 2, 0))
+    target = np.resize(target.sum(0), (target_size[0], target_size[1], 1))
 
     return target
 
