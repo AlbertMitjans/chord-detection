@@ -96,22 +96,13 @@ def train(ckpt, num_epochs, batch_size, device):
                     top1=train_recall.avg * 100, top2=train_precision[0].avg * 100, top3=train_precision[1].avg * 100,
                     top4=train_precision[2].avg * 100, top5=train_precision[3].avg * 100))
 
-                '''import matplotlib.pyplot as plt
-                import torchvision.transforms as transforms
-                for i in range(4):
-                    fig, ax = plt.subplots(1, 3)
-                    ax[0].imshow(grid[0][i].cpu(), cmap='gray')
-                    ax[1].imshow(output[-1][0][i].cpu().detach(), cmap='gray')
-                    ax[2].imshow(transforms.ToPILImage()(input.cpu()[0]))
-                    plt.show()'''
-
         if epoch % evaluation_interval == 0:
             # evaluate on validation set
             print('Train set:  ')
 
             t_recall, t_precision = test(train_loader, model, device)
             print('Validation set:  ')
-            e_recall, e_precision = test(val_loader, model, device)
+            e_recall, e_precision = test(val_loader, model, device, show=False)
 
             # 1. Log scalar values (scalar summary)
             info = {'Train Loss': train_loss.avg, 'Train Recall': t_recall, 'Train Precision 1': t_precision[0],

@@ -10,7 +10,7 @@ from utils.utils import AverageMeter, accuracy
 from utils.img_utils import compute_gradient, save_img
 
 
-def test(val_loader, model, device, save_imgs=False):
+def test(val_loader, model, device, save_imgs=False, show=False):
     batch_time = AverageMeter()
     eval_recall = AverageMeter()
     eval_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
@@ -27,6 +27,15 @@ def test(val_loader, model, device, save_imgs=False):
 
         # compute output
         output = model(input).split(input.shape[0], dim=0)
+
+        if show:
+            import matplotlib.pyplot as plt
+            import torchvision.transforms as transforms
+            fig, ax = plt.subplots(1, 3)
+            ax[0].imshow(target[0][0].cpu(), cmap='gray')
+            ax[1].imshow(output[-1][0][0].cpu().detach(), cmap='gray')
+            ax[2].imshow(transforms.ToPILImage()(input.cpu()[0]))
+            plt.show()
 
         # measure accuracy
         accuracy(fingers=fingers, output=output[-1].data, target=target, global_recall=eval_recall,
