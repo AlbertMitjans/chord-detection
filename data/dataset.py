@@ -17,6 +17,8 @@ class CornersDataset(Dataset):
     def __init__(self, root_dir, end_file, target_shape=(8, 12, 12), transform=None):
         self.img_names = []
         self.fingers = []
+        self.frets = []
+        self.strings = []
         self.colors = []
         self.root_dir = root_dir
         self.transform = transform
@@ -32,6 +34,12 @@ class CornersDataset(Dataset):
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
                 if file.endswith("_frets.csv"):
+                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
+                    self.frets.append(f)
+                if file.endswith("_strings.csv"):
+                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
+                    self.strings.append(f)
+                if file.endswith("_fingers.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
                     self.fingers.append(f)
 
@@ -50,26 +58,42 @@ class CornersDataset(Dataset):
 
         img_number = os.path.basename(img_name)[:-4]
 
-        fingers = np.array([self.fingers[idx]])
-        fingers = fingers.astype(int).reshape(-1, 2)
-
         image = Image.open(img_name)
         image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
-        grid = transforms.ToTensor()(gaussian(image, fingers, kernel=int(image.shape[1]/20), target_size=image[0].size())).type(torch.float32)
-        grid = grid/grid.max()
+        fingers = np.array([self.fingers[idx]])
+        fingers = fingers.astype(int).reshape(-1, 2)
 
-        sample = {'image': image, 'grid': grid, 'img_name': img_number, 'fingers': fingers}
+        frets = np.array([self.frets[idx]])
+        frets = frets.astype(int).reshape(-1, 2)
+
+        strings = np.array([self.strings[idx]])
+        strings = strings.astype(int).reshape(-1, 2)
+
+        fingers_grid = transforms.ToTensor()(gaussian(image, fingers, kernel=int(image.shape[1]/5), target_size=image[0].size())).type(torch.float32)
+        fingers_grid = fingers_grid/fingers_grid.max()
+
+        frets_grid = transforms.ToTensor()(gaussian(image, frets, kernel=int(image.shape[1] / 10), target_size=image[0].size())).type(torch.float32)
+        frets_grid = frets_grid / frets_grid.max()
+
+        strings_grid = transforms.ToTensor()(gaussian(image, strings, kernel=int(image.shape[1] / 10), target_size=image[0].size())).type(torch.float32)
+        strings_grid = strings_grid / strings_grid.max()
+
+        sample = {'image': image, 'fingers': fingers_grid, 'frets': frets_grid, 'strings': strings_grid, 'img_name': img_number, 'finger_coord': fingers, 'fret_coord': frets, 'string_coord': strings}
 
         if self.transform:
             sample = self.transform(sample)
 
         sample['image'] = pad_to_square(sample['image'])
-        sample['grid'] = pad_to_square(sample['grid'])
+        sample['fingers'] = pad_to_square(sample['fingers'])
+        sample['frets'] = pad_to_square(sample['frets'])
+        sample['strings'] = pad_to_square(sample['strings'])
 
-        '''fig, ax = plt.subplots(1, 2)
-        ax[0].imshow(transforms.ToPILImage()(sample['grid']), cmap='gray')
-        ax[1].imshow(transforms.ToPILImage()(sample['image']))
+        '''fig, ax = plt.subplots(1, 4)
+        ax[0].imshow(transforms.ToPILImage()(sample['fingers']), cmap='gray')
+        ax[1].imshow(transforms.ToPILImage()(sample['frets']), cmap='gray')
+        ax[2].imshow(transforms.ToPILImage()(sample['strings']), cmap='gray')
+        ax[3].imshow(transforms.ToPILImage()(sample['image']))
         plt.show()'''
 
         return sample

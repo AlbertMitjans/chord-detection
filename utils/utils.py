@@ -51,13 +51,13 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     criterion = JointsMSELoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    checkpoint = torch.load("checkpoints/hg_s2_b1/model_best.pth.tar", map_location=device)
+    '''checkpoint = torch.load("checkpoints/hg_s2_b1/model_best.pth.tar", map_location=device)
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
 
     model = nn.Sequential(model, nn.Conv2d(16, 1, kernel_size=1).to(device))
     model = nn.DataParallel(model)
-    model.to(device)
+    model.to(device)'''
 
     end_file = '.jpg'
 
@@ -101,8 +101,8 @@ def multiple_gaussians(output, target):
     labels_target = label(max_target)[0]
     max_target = np.array(center_of_mass(max_target, labels_target, range(1, np.max(labels_target) + 1))).astype(np.int)
 
-    true_p = np.array([0, 0, 0, 0, 0, 0]).astype(np.float)
-    all_p = np.array([0, 0, 0, 0, 0, 0]).astype(np.float)
+    true_p = np.array([0, 0, 0, 0]).astype(np.float)
+    all_p = np.array([0, 0, 0, 0]).astype(np.float)
 
     max_out = peak_local_max(output[0], min_distance=5, threshold_rel=0.5, exclude_border=False, indices=False)
     labels_out = label(max_out)[0]
@@ -115,7 +115,7 @@ def multiple_gaussians(output, target):
 
     max_out = np.array([x for _, x in sorted(zip(max_values, max_out), reverse=True, key=lambda x: x[0])])
 
-    for n in range(min(6, max_target.shape[0])):
+    for n in range(min(4, max_target.shape[0])):
         max_out2 = max_out[:n + 1]
         for i, (c, d) in enumerate(max_out2):
             if i < max_out2.shape[0] - 1:
@@ -138,17 +138,17 @@ def multiple_gaussians(output, target):
         recall = 0
         precision = np.array([0, 0, 0, 0]).astype(np.float)
     else:
-        recall = true_p[min(6, max_out.shape[0]) - 1] / num_targets
+        recall = true_p[min(4, max_out.shape[0]) - 1] / num_targets
         precision = true_p / all_p
         precision[np.isnan(precision)] = 0
 
-    '''import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
     import torchvision.transforms as transforms
     fig, ax = plt.subplots(1, 2)
     ax[0].imshow(target[0], cmap='gray')
     ax[1].imshow(output[0], cmap='gray')
     plt.show()
 
-    print(precision)'''
+    print(precision)
 
     return recall, precision, max_out

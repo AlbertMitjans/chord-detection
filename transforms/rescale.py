@@ -16,7 +16,9 @@ class Rescale(object):
 
     def __call__(self, sample):
         image = sample['image']
-        grid = sample['grid']
+        fingers = sample['fingers']
+        frets = sample['frets']
+        strings = sample['strings']
 
         h, w = image.shape[-2:]
         if isinstance(self.output_size, int):
@@ -32,9 +34,13 @@ class Rescale(object):
         resize = transform.Resize((new_h, new_w))
 
         img = transform.ToTensor()(resize(transform.ToPILImage()(image)))
-        grid = transform.ToTensor()(resize(transform.ToPILImage()(grid)))
+        fingers = transform.ToTensor()(resize(transform.ToPILImage()(fingers)))
+        frets = transform.ToTensor()(resize(transform.ToPILImage()(frets)))
+        strings = transform.ToTensor()(resize(transform.ToPILImage()(strings)))
 
         sample['image'] = img
-        sample['grid'] = grid
+        sample['fingers'] = fingers
+        sample['frets'] = frets
+        sample['strings'] = strings
 
         return sample
