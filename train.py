@@ -16,10 +16,10 @@ def train(ckpt, num_epochs, batch_size, device):
     momentum = 0
     weight_decay = 0
 
-    directory = 'data/'
+    directory = 'data/mpii/'
     start_epoch = 0
     start_loss = 0
-    print_freq = 20
+    print_freq = 1
     checkpoint_interval = 1
     evaluation_interval = 1
 
@@ -70,42 +70,42 @@ def train(ckpt, num_epochs, batch_size, device):
             # measure data loading time
             data_time.update(time.time() - end)
             input = data['image'].float().to(device)
-            fingers = data['fingers'].float().to(device)
-            frets = data['frets'].float().to(device)
-            strings = data['strings'].float().to(device)
-            fingers_coord = data['finger_coord']
-            frets_coord = data['fret_coord']
-            strings_coord = data['string_coord']
+            features = data['features'].float().to(device)
+            feature_coord = data['features_coord']
 
             # compute output
             output1 = model(input)[0].split(input.shape[0], dim=0)
             output2 = model(input)[1].split(input.shape[0], dim=0)
             output3 = model(input)[2].split(input.shape[0], dim=0)
 
-            loss1 = sum(i*criterion_grid(o, fingers) for i, o in enumerate(output1))
-            loss2 = sum(i * criterion_grid(o, frets) for i, o in enumerate(output2))
-            loss3 = sum(i * criterion_grid(o, strings) for i, o in enumerate(output3))
+            loss1 = sum(i*criterion_grid(o, features) for i, o in enumerate(output1))
+            loss2 = sum(i * criterion_grid(o, features) for i, o in enumerate(output2))
+            loss3 = sum(i * criterion_grid(o, features) for i, o in enumerate(output3))
 
             loss = loss1 + loss2 + loss3
 
             # measure accuracy and record loss
-            accuracy(output=output1[-1].data, target=fingers,
-                     global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=fingers_coord)
+            accuracy(output=output1[-1].data, target=features,
+                     global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=feature_coord)
 
-            accuracy(output=output2[-1].data, target=frets,
+            accuracy(output=output2[-1].data, target=features,
                      global_precision=train_frets_precision, global_recall=train_frets_recall,
-                     fingers=frets_coord)
+                     fingers=feature_coord)
 
-            accuracy(output=output3[-1].data, target=strings,
+            accuracy(output=output3[-1].data, target=features,
                      global_precision=train_strings_precision, global_recall=train_strings_recall,
-                     fingers=strings_coord)
+                     fingers=feature_coord)
 
             '''import matplotlib.pyplot as plt
             import torchvision.transforms as transforms
             fig, ax = plt.subplots(1, 4)
-            ax[0].imshow(transforms.ToPILImage()(output1[-1][0][0].cpu()), cmap='gray')
-            ax[1].imshow(transforms.ToPILImage()(output2[-1][0][0].cpu()), cmap='gray')
-            ax[2].imshow(transforms.ToPILImage()(output3[-1][0][0].cpu()), cmap='gray')
+            ax[0].axis('off')
+            ax[1].axis('off')
+            ax[2].axis('off')
+            ax[3].axis('off')
+            ax[0].imshow(output1[-1][0][0].cpu().detach(), cmap='gray')
+            ax[1].imshow(output2[-1][0][0].cpu().detach(), cmap='gray')
+            ax[2].imshow(output3[-1][0][0].cpu().detach(), cmap='gray')
             ax[3].imshow(transforms.ToPILImage()(data['image'][0].cpu()))
             plt.show()'''
 
