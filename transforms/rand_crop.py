@@ -12,7 +12,7 @@ class RandomCrop(object):
 
     def __call__(self, sample):
         if np.random.random() < 0.5:
-            image, grid = sample['image'], sample['grid']
+            image, grid = sample['image'], sample['features']
             rc = transforms.RandomCrop((int(image.shape[1] * self.size), int(image.shape[2] * self.size)))
             im_grid = torch.cat((image, grid))
             crop_im_grid = rc(transforms.ToPILImage()(im_grid))

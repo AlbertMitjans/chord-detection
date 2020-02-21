@@ -68,9 +68,9 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     rescale = Rescale((300, 300))
 
     train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file,
-                                   transform=transforms.Compose([rescale]))
+                                   transform=transforms.Compose([horizontal_flip, rescale]))
     val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file,
-                                 transform=transforms.Compose([rescale]))
+                                 transform=transforms.Compose([horizontal_flip, rescale]))
 
     return model, train_dataset, val_dataset, criterion, optimizer
 
@@ -84,19 +84,21 @@ def accuracy(fingers, output, target, global_recall, global_precision):
     target = target.cpu().detach().numpy()
 
     for batch_unit in range(batch_size):  # for each batch element
-        recall, precision, max_out = multiple_gaussians(output[batch_unit], target[batch_unit])
+        for joint in range(output.shape[1]):
+            recall, precision, max_out = multiple_gaussians(output[batch_unit][joint], target[batch_unit][joint])
 
-        global_recall.update(recall)
-        for i, (a, b) in enumerate(sorted(fingers[batch_unit], key=lambda x: x[0], reverse=True)):
-            if a != -1 and b != -1 and i < 4:
-                global_precision[i].update(precision[i])
+            global_recall.update(recall)
+            for i in range(max_out.shape[0]):
+                (a, b) = fingers[batch_unit][joint]
+                if a != -1 and b != -1 and i < 4:
+                    global_precision[i].update(precision[i])
 
     return max_out
 
 
 def multiple_gaussians(output, target):
     # we calculate the positions of the max value in output and target
-    max_target = peak_local_max(target[0], min_distance=5, exclude_border=False,
+    max_target = peak_local_max(target, min_distance=5, exclude_border=False,
                                 indices=False)  # num_peaks=4)
     labels_target = label(max_target)[0]
     max_target = np.array(center_of_mass(max_target, labels_target, range(1, np.max(labels_target) + 1))).astype(np.int)
@@ -104,14 +106,14 @@ def multiple_gaussians(output, target):
     true_p = np.array([0, 0, 0, 0]).astype(np.float)
     all_p = np.array([0, 0, 0, 0]).astype(np.float)
 
-    max_out = peak_local_max(output[0], min_distance=5, threshold_rel=0.5, exclude_border=False, indices=False)
+    max_out = peak_local_max(output, min_distance=5, threshold_rel=0.5, exclude_border=False, indices=False)
     labels_out = label(max_out)[0]
     max_out = np.array(center_of_mass(max_out, labels_out, range(1, np.max(labels_out) + 1))).astype(np.int)
 
     max_values = []
 
     for index in max_out:
-        max_values.append(output[0][index[0]][index[1]])
+        max_values.append(output[index[0]][index[1]])
 
     max_out = np.array([x for _, x in sorted(zip(max_values, max_out), reverse=True, key=lambda x: x[0])])
 
@@ -142,13 +144,13 @@ def multiple_gaussians(output, target):
         precision = true_p / all_p
         precision[np.isnan(precision)] = 0
 
-    import matplotlib.pyplot as plt
+    '''import matplotlib.pyplot as plt
     import torchvision.transforms as transforms
     fig, ax = plt.subplots(1, 2)
     ax[0].imshow(target[0], cmap='gray')
     ax[1].imshow(output[0], cmap='gray')
     plt.show()
 
-    print(precision)
+    print(precision)'''
 
     return recall, precision, max_out
