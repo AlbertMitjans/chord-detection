@@ -16,7 +16,10 @@ from transforms.pad_to_square import pad_to_square
 class CornersDataset(Dataset):
     def __init__(self, root_dir, end_file, target_shape=(8, 12, 12), transform=None):
         self.img_names = []
-        self.fingers = []
+        self.tip = []
+        self.knuckles1 = []
+        self.knuckles2 = []
+        self.notes = []
         self.frets = []
         self.strings = []
         self.features = []
@@ -51,16 +54,25 @@ class CornersDataset(Dataset):
                 if file.endswith("_strings.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
                     self.strings.append(f)
-                if file.endswith("_fingers.csv"):
+                if file.endswith("_tip.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
-                    self.fingers.append(f)
-        print('Finished downloading')
+                    self.tip.append(f)
+                if file.endswith("_knuckle1.csv"):
+                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
+                    self.knuckles1.append(f)
+                if file.endswith("_knuckle2.csv"):
+                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
+                    self.knuckles2.append(f)
+                if file.endswith("_notes.csv"):
+                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
+                    self.notes.append(f)
 
     def evaluate(self):
         self.validation = True
 
     def __len__(self):
-        return len(self.features)
+        return len(self.img_names)
+
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -74,23 +86,17 @@ class CornersDataset(Dataset):
         image = Image.open(img_name)
         image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
-        features = np.array(self.features[idx])
-        features = features.astype(int)
-        features2 = np.full((16, 2), -1)
+        tip = np.array([self.tip[idx]])
+        tip = tip.astype(int).reshape(-1, 2)
 
-        feature_grid = np.zeros((image.shape[1], image.shape[2], 16))
-        for i in range(features.shape[0]):
-            feature_grid += gaussian(image, features[i], kernel=int(image.shape[1]/15), target_size=image[0].size())
-            for i, (a, b) in enumerate(features[i]):
-                if a >= 0 and b >= 0:
-                    features2[i] = [a, b]
+        knuckles1 = np.array([self.knuckles1[idx]])
+        knuckles1 = knuckles1.astype(int).reshape(-1, 2)
 
-        feature_grid = transforms.ToTensor()(feature_grid).type(torch.float32)
-        feature_grid = feature_grid/feature_grid.max()
+        knuckles2 = np.array([self.knuckles2[idx]])
+        knuckles2 = knuckles2.astype(int).reshape(-1, 2)
 
-
-        '''fingers = np.array([self.fingers[idx]])
-        fingers = fingers.astype(int).reshape(-1, 2)
+        notes = np.array([self.notes[idx]])
+        notes = notes.astype(int).reshape(-1, 2)
 
         frets = np.array([self.frets[idx]])
         frets = frets.astype(int).reshape(-1, 2)
@@ -98,16 +104,32 @@ class CornersDataset(Dataset):
         strings = np.array([self.strings[idx]])
         strings = strings.astype(int).reshape(-1, 2)
 
-        fingers_grid = transforms.ToTensor()(gaussian(image, fingers, kernel=int(image.shape[1]/5), target_size=image[0].size())).type(torch.float32)
-        fingers_grid = fingers_grid/fingers_grid.max()
+        tip_grid = transforms.ToTensor()(gaussian(image, tip, kernel=int(image.shape[1]/5), target_size=image[0].size())).type(torch.float32)
+        tip_grid = tip_grid/tip_grid.max()
+
+        knuckles1_grid = transforms.ToTensor()(gaussian(image, knuckles1, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
+        knuckles1_grid = knuckles1_grid / knuckles1_grid.max()
+
+        knuckles2_grid = transforms.ToTensor()(gaussian(image, knuckles2, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
+        knuckles2_grid = knuckles2_grid / knuckles2_grid.max()
+
+        notes_grid = transforms.ToTensor()(gaussian(image, notes, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
+        notes_grid = notes_grid / notes_grid.max()
+
+        target_grid = torch.cat((tip_grid, knuckles1_grid, knuckles2_grid))
+        target = np.stack(tip, knuckles1, knuckles2)
 
         frets_grid = transforms.ToTensor()(gaussian(image, frets, kernel=int(image.shape[1] / 10), target_size=image[0].size())).type(torch.float32)
         frets_grid = frets_grid / frets_grid.max()
 
         strings_grid = transforms.ToTensor()(gaussian(image, strings, kernel=int(image.shape[1] / 15), target_size=image[0].size())).type(torch.float32)
         strings_grid = strings_grid / strings_grid.max()'''
+        
+        sample = {'image': image, 'tip': tip_grid, 'knuckle1': knuckles1_grid, 'knuckle2': knuckles2_grid,
+                  'notes': notes_grid, 'frets': frets_grid, 'strings': strings_grid, 'img_name': img_number,
+                  'tip_coord': tip, 'knuckle1_coord': knuckles1, 'knuckle2_coord': knuckles2, 'notes_coord': notes,
+                  'fret_coord': frets, 'string_coord': strings}
 
-        sample = {'image': image, 'features': feature_grid, 'img_name': img_number, 'features_coord': features2}
 
         if self.transform:
             sample = self.transform(sample)
