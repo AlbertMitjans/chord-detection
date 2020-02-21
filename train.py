@@ -75,26 +75,26 @@ def train(ckpt, num_epochs, batch_size, device):
 
             # compute output
             output1 = model(input)[0].split(input.shape[0], dim=0)
-            output2 = model(input)[1].split(input.shape[0], dim=0)
-            output3 = model(input)[2].split(input.shape[0], dim=0)
+            #output2 = model(input)[1].split(input.shape[0], dim=0)
+            #output3 = model(input)[2].split(input.shape[0], dim=0)
 
             loss1 = sum(i*criterion_grid(o, features) for i, o in enumerate(output1))
-            loss2 = sum(i * criterion_grid(o, features) for i, o in enumerate(output2))
-            loss3 = sum(i * criterion_grid(o, features) for i, o in enumerate(output3))
+            #loss2 = sum(i * criterion_grid(o, features) for i, o in enumerate(output2))
+            #loss3 = sum(i * criterion_grid(o, features) for i, o in enumerate(output3))
 
-            loss = loss1 + loss2 + loss3
+            loss = loss1 #+ loss2 + loss3
 
             # measure accuracy and record loss
             accuracy(output=output1[-1].data, target=features,
                      global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=feature_coord)
 
-            accuracy(output=output2[-1].data, target=features,
+            '''accuracy(output=output2[-1].data, target=features,
                      global_precision=train_frets_precision, global_recall=train_frets_recall,
                      fingers=feature_coord)
 
             accuracy(output=output3[-1].data, target=features,
                      global_precision=train_strings_precision, global_recall=train_strings_recall,
-                     fingers=feature_coord)
+                     fingers=feature_coord)'''
 
             '''import matplotlib.pyplot as plt
             import torchvision.transforms as transforms

@@ -82,7 +82,7 @@ class CornersDataset(Dataset):
         for i in range(features.shape[0]):
             feature_grid += gaussian(image, features[i], kernel=int(image.shape[1]/15), target_size=image[0].size())
             for i, (a, b) in enumerate(features[i]):
-                if a != -1 and b != -1:
+                if a >= 0 and b >= 0:
                     features2[i] = [a, b]
 
         feature_grid = transforms.ToTensor()(feature_grid).type(torch.float32)
@@ -128,7 +128,7 @@ def gaussian(image, corners, kernel=5, nsig=5, target_size=(304, 495)):
     n = float(image.shape[1]) / float(target.shape[1])
     m = float(image.shape[2]) / float(target.shape[2])
     for i, (x, y) in enumerate(corners):
-        if x != -1 and y != -1:
+        if x >= 0 and y >= 0:
             a = int(x / n)
             b = int(y / m)
             x = np.linspace(-nsig, nsig, kernel)
