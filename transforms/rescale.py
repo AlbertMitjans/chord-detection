@@ -1,4 +1,5 @@
 import torchvision.transforms as transform
+import torch
 
 
 class Rescale(object):
@@ -16,7 +17,7 @@ class Rescale(object):
 
     def __call__(self, sample):
         image = sample['image']
-        fingers = sample['fingers']
+        target = sample['target']
         frets = sample['frets']
         strings = sample['strings']
 
@@ -34,12 +35,15 @@ class Rescale(object):
         resize = transform.Resize((new_h, new_w))
 
         img = transform.ToTensor()(resize(transform.ToPILImage()(image)))
-        fingers = transform.ToTensor()(resize(transform.ToPILImage()(fingers)))
+        target1 = transform.ToTensor()(resize(transform.ToPILImage()(target[0])))
+        target2 = transform.ToTensor()(resize(transform.ToPILImage()(target[1])))
+        target3 = transform.ToTensor()(resize(transform.ToPILImage()(target[2])))
+        target = torch.cat((target1, target2, target3))
         frets = transform.ToTensor()(resize(transform.ToPILImage()(frets)))
         strings = transform.ToTensor()(resize(transform.ToPILImage()(strings)))
 
         sample['image'] = img
-        sample['fingers'] = fingers
+        sample['target'] = target
         sample['frets'] = frets
         sample['strings'] = strings
 

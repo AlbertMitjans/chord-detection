@@ -51,13 +51,13 @@ def train(ckpt, num_epochs, batch_size, device):
         train_loss = AverageMeter()
 
         train_fingers_recall = AverageMeter()
-        train_fingers_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
+        train_fingers_precision = AverageMeter()
 
         train_frets_recall = AverageMeter()
-        train_frets_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
+        train_frets_precision = AverageMeter()
 
         train_strings_recall = AverageMeter()
-        train_strings_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
+        train_strings_precision = AverageMeter()
 
         train_loss.update(start_loss)
 
@@ -70,10 +70,10 @@ def train(ckpt, num_epochs, batch_size, device):
             # measure data loading time
             data_time.update(time.time() - end)
             input = data['image'].float().to(device)
-            fingers = data['fingers'].float().to(device)
+            target = data['target'].float().to(device)
             frets = data['frets'].float().to(device)
             strings = data['strings'].float().to(device)
-            fingers_coord = data['finger_coord']
+            target_coord = data['target_coord']
             frets_coord = data['fret_coord']
             strings_coord = data['string_coord']
 
@@ -82,31 +82,43 @@ def train(ckpt, num_epochs, batch_size, device):
             output2 = model(input)[1].split(input.shape[0], dim=0)
             output3 = model(input)[2].split(input.shape[0], dim=0)
 
-            loss1 = sum(i*criterion_grid(o, fingers) for i, o in enumerate(output1))
+            loss1 = sum(i*criterion_grid(o, target) for i, o in enumerate(output1))
             loss2 = sum(i * criterion_grid(o, frets) for i, o in enumerate(output2))
             loss3 = sum(i * criterion_grid(o, strings) for i, o in enumerate(output3))
 
             loss = loss1 + loss2 + loss3
 
             # measure accuracy and record loss
-            accuracy(output=output1[-1].data, target=fingers,
-                     global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=fingers_coord)
+            accuracy(output=output1[-1].data, target=target,
+                     global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=target_coord,
+                     min_dist=10)
 
             accuracy(output=output2[-1].data, target=frets,
                      global_precision=train_frets_precision, global_recall=train_frets_recall,
-                     fingers=frets_coord)
+                     fingers=frets_coord.unsqueeze(0), min_dist=5)
 
             accuracy(output=output3[-1].data, target=strings,
                      global_precision=train_strings_precision, global_recall=train_strings_recall,
-                     fingers=strings_coord)
+                     fingers=strings_coord.unsqueeze(0), min_dist=5)
 
             '''import matplotlib.pyplot as plt
-            import torchvision.transforms as transforms
-            fig, ax = plt.subplots(1, 4)
-            ax[0].imshow(transforms.ToPILImage()(output1[-1][0][0].cpu()), cmap='gray')
-            ax[1].imshow(transforms.ToPILImage()(output2[-1][0][0].cpu()), cmap='gray')
-            ax[2].imshow(transforms.ToPILImage()(output3[-1][0][0].cpu()), cmap='gray')
-            ax[3].imshow(transforms.ToPILImage()(data['image'][0].cpu()))
+            from torchvision import transforms as transforms
+            fig, ax = plt.subplots(2, 4)
+            ax[0][0].axis('off')
+            ax[0][1].axis('off')
+            ax[0][2].axis('off')
+            ax[0][3].axis('off')
+            ax[1][0].axis('off')
+            ax[1][1].axis('off')
+            ax[1][2].axis('off')
+            ax[1][3].axis('off')
+            ax[0][0].imshow(data['target'][0][0], cmap='gray')
+            ax[0][1].imshow(data['target'][0][1], cmap='gray')
+            ax[0][2].imshow(data['target'][0][2], cmap='gray')
+            ax[0][3].imshow(data['target'][0][3], cmap='gray')
+            ax[1][0].imshow(transforms.ToPILImage()(data['frets'][0]), cmap='gray')
+            ax[1][1].imshow(transforms.ToPILImage()(data['strings'][0]), cmap='gray')
+            ax[1][2].imshow(transforms.ToPILImage()(data['image'][0]))
             plt.show()'''
 
             train_loss.update(loss.item())
@@ -125,22 +137,19 @@ def train(ckpt, num_epochs, batch_size, device):
                       'Loss.avg: {loss.avg:.4f}\n'
                       'FINGERS: \t'
                       'Recall(%): {top1:.3f}\t'
-                      'Precision num. corners (%): ({top2:.3f}, {top3:.3f}, {top4:.3f}, {top5:.3f})\n'
-                      'FRETS: \t'
+                      'Precision(%): {top2:.3f}\n'
+                      'FRETS:   \t'
                       'Recall(%): {top6:.3f}\t'
-                      'Precision num. corners (%): ({top7:.3f}, {top8:.3f}, {top9:.3f}, {top10:.3f})\n'
+                      'Precision(%): {top7:.3f}\n'
                       'STRINGS: \t'
                       'Recall(%): {top11:.3f}\t'
-                      'Precision num. corners (%): ({top12:.3f}, {top13:.3f}, {top14:.3f}, {top15:.3f})\n'
+                      'Precision(%): {top12:.3f}\n'
                       '---------------------------------------------------------------------------------------------'
                     .format(
                     epoch, data_idx, len(train_loader), loss=train_loss,
-                    top1=train_fingers_recall.avg * 100, top2=train_fingers_precision[0].avg * 100, top3=train_fingers_precision[1].avg * 100,
-                    top4=train_fingers_precision[2].avg * 100, top5=train_fingers_precision[3].avg * 100,
-                    top6=train_frets_recall.avg * 100, top7=train_frets_precision[0].avg * 100, top8=train_frets_precision[1].avg * 100,
-                    top9=train_frets_precision[2].avg * 100, top10=train_frets_precision[3].avg * 100,
-                    top11=train_strings_recall.avg * 100, top12=train_strings_precision[0].avg * 100, top13=train_strings_precision[1].avg * 100,
-                    top14=train_strings_precision[2].avg * 100, top15=train_strings_precision[3].avg * 100))
+                    top1=train_fingers_recall.avg * 100, top2=train_fingers_precision.avg * 100,
+                    top6=train_frets_recall.avg * 100, top7=train_frets_precision.avg * 100,
+                    top11=train_strings_recall.avg * 100, top12=train_strings_precision.avg * 100))
 
         if epoch % evaluation_interval == 0:
             # evaluate on validation set
@@ -155,23 +164,13 @@ def train(ckpt, num_epochs, batch_size, device):
                   '---------------------------------------------------------------------------------------------')
 
             # 1. Log scalar values (scalar summary)
-            info = {'Train Loss': train_loss.avg, '(Fingers) Train Recall': t_recall1, '(Fingers) Train Precision 1': t_precision1[0],
-                    '(Fingers) Train Precision 2': t_precision1[1], '(Fingers) Train Precision 3': t_precision1[2],
-                    '(Fingers) Train Precision 4': t_precision1[3], '(Fingers) Validation Recall': e_recall1,
-                    '(Fingers) Validation Precision 1': e_precision1[0], '(Fingers) Validation Precision 2': e_precision1[1],
-                    '(Fingers) Validation Precision 3': e_precision1[2], '(Fingers) Validation Precision 4': e_precision1[3],
-                    '(Frets) Train Recall': t_recall2, '(Frets) Train Precision 1': t_precision2[0],
-                    '(Frets) Train Precision 2': t_precision2[1], '(Frets) Train Precision 3': t_precision2[2],
-                    '(Frets) Train Precision 4': t_precision2[3], '(Frets) Validation Recall': e_recall2,
-                    '(Frets) Validation Precision 1': e_precision2[0], '(Frets) Validation Precision 2': e_precision2[1],
-                    '(Frets) Validation Precision 3': e_precision2[2], '(Frets) Validation Precision 4': e_precision2[3],
-                    '(Strings) Train Recall': t_recall3, '(Strings) Train Precision 1': t_precision3[0],
-                    '(Strings) Train Precision 2': t_precision3[1], '(Strings) Train Precision 3': t_precision3[2],
-                    '(Strings) Train Precision 4': t_precision3[3], '(Strings) Validation Recall': e_recall3,
-                    '(Strings) Validation Precision 1': e_precision3[0],
-                    '(Strings) Validation Precision 2': e_precision3[1],
-                    '(Strings) Validation Precision 3': e_precision3[2], '(Strings) Validation Precision 4': e_precision3[3]
-                    }
+            info = {'Train Loss': train_loss.avg,
+                    '(Fingers) Train Recall': t_recall1, '(Fingers) Train Precision': t_precision1,
+                    '(Fingers) Validation Recall': e_recall1, '(Fingers) Validation Precision': e_precision1,
+                    '(Frets) Train Recall': t_recall2, '(Frets) Train Precision': t_precision2,
+                    '(Frets) Validation Recall': e_recall2, '(Frets) Validation Precision': e_precision2,
+                    '(Strings) Train Recall': t_recall3, '(Strings) Train Precision': t_precision3,
+                    '(Strings) Validation Recall': e_recall3, '(Strings) Validation Precision': e_precision3}
 
             for tag, value in info.items():
                 logger.scalar_summary(tag, value, epoch)

@@ -14,13 +14,13 @@ def test(val_loader, model, device, save_imgs=False, show=False):
     batch_time = AverageMeter()
 
     eval_fingers_recall = AverageMeter()
-    eval_fingers_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
+    eval_fingers_precision = AverageMeter()
 
     eval_frets_recall = AverageMeter()
-    eval_frets_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
+    eval_frets_precision = AverageMeter()
 
     eval_strings_recall = AverageMeter()
-    eval_strings_precision = np.array([AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()])
+    eval_strings_precision = AverageMeter()
 
     # switch to evaluate mode
     model.eval()
@@ -29,10 +29,10 @@ def test(val_loader, model, device, save_imgs=False, show=False):
 
     for data_idx, data in enumerate(val_loader):
         input = data['image'].float().to(device)
-        fingers = data['fingers'].float().to(device)
+        target = data['target'].float().to(device)
         frets = data['frets'].float().to(device)
         strings = data['strings'].float().to(device)
-        fingers_coord = data['finger_coord']
+        target_coord = data['target_coord']
         frets_coord = data['fret_coord']
         strings_coord = data['string_coord']
 
@@ -45,27 +45,30 @@ def test(val_loader, model, device, save_imgs=False, show=False):
             import matplotlib.pyplot as plt
             import torchvision.transforms as transforms
             fig, ax = plt.subplots(1, 3)
-            ax[0].imshow(fingers[0][0].cpu(), cmap='gray')
+            ax[0].imshow(target[0][0].cpu(), cmap='gray')
             ax[1].imshow(output1[-1][0][0].cpu().detach(), cmap='gray')
             ax[2].imshow(transforms.ToPILImage()(input.cpu()[0]))
             plt.show()
 
         # measure accuracy
-        accuracy(output=output1[-1].data, target=fingers,
-                 global_precision=eval_fingers_precision, global_recall=eval_fingers_recall, fingers=fingers_coord)
+        accuracy(output=output1[-1].data, target=target,
+                 global_precision=eval_fingers_precision, global_recall=eval_fingers_recall, fingers=target_coord,
+                 min_dist= 10)
 
         accuracy(output=output2[-1].data, target=frets,
                  global_precision=eval_frets_precision, global_recall=eval_frets_recall,
-                 fingers=frets_coord)
+                 fingers=frets_coord.unsqueeze(0), min_dist=5)
 
         accuracy(output=output3[-1].data, target=strings,
                  global_precision=eval_strings_precision, global_recall=eval_strings_recall,
-                 fingers=strings_coord)
+                 fingers=strings_coord.unsqueeze(0), min_dist=5)
 
         if save_imgs:
-            save_img(input.cpu().detach()[0], output1[-1].cpu().detach().numpy()[0], data['img_name'][0] + '_fingers')
-            save_img(input.cpu().detach()[0], output2[-1].cpu().detach().numpy()[0], data['img_name'][0] + '_frets')
-            save_img(input.cpu().detach()[0], output2[-1].cpu().detach().numpy()[0], data['img_name'][0] + '_strings')
+            save_img(input.cpu().detach()[0], output1[-1][0][0].cpu().detach().numpy(), 10, data['img_name'][0] + '_top')
+            save_img(input.cpu().detach()[0], output1[-1][0][1].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles1')
+            save_img(input.cpu().detach()[0], output1[-1][0][2].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles2')
+            save_img(input.cpu().detach()[0], output2[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_frets')
+            save_img(input.cpu().detach()[0], output3[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_strings')
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -73,32 +76,16 @@ def test(val_loader, model, device, save_imgs=False, show=False):
 
     print('FINGERS: \t'
           'Recall(%): {top1:.3f}\t'
-          'Precision num. corners (%): ({top2:.3f}, {top3:.3f}, {top4:.3f}, {top5:.3f})\n'
-          'FRETS: \t'
+          'Precision(%): {top2:.3f}\n'
+          'FRETS:   \t'
           'Recall(%): {top6:.3f}\t'
-          'Precision num. corners (%): ({top7:.3f}, {top8:.3f}, {top9:.3f}, {top10:.3f})\n'
+          'Precision(%): {top7:.3f}\n'
           'STRINGS: \t'
           'Recall(%): {top11:.3f}\t'
-          'Precision num. corners (%): ({top12:.3f}, {top13:.3f}, {top14:.3f}, {top15:.3f})\n'
-        .format(top1=eval_fingers_recall.avg * 100, top2=eval_fingers_precision[0].avg * 100,
-        top3=eval_fingers_precision[1].avg * 100,
-        top4=eval_fingers_precision[2].avg * 100, top5=eval_fingers_precision[3].avg * 100,
-        top6=eval_frets_recall.avg * 100, top7=eval_frets_precision[0].avg * 100,
-        top8=eval_frets_precision[1].avg * 100,
-        top9=eval_frets_precision[2].avg * 100, top10=eval_frets_precision[3].avg * 100,
-        top11=eval_strings_recall.avg * 100, top12=eval_strings_precision[0].avg * 100,
-        top13=eval_strings_precision[1].avg * 100,
-        top14=eval_strings_precision[2].avg * 100, top15=eval_strings_precision[3].avg * 100))
+          'Precision(%): {top12:.3f}\n'
+        .format(top1=eval_fingers_recall.avg * 100, top2=eval_fingers_precision.avg * 100,
+        top6=eval_frets_recall.avg * 100, top7=eval_frets_precision.avg * 100,
+        top11=eval_strings_recall.avg * 100, top12=eval_strings_precision.avg * 100))
 
-    global_strings_precision = np.array(
-        [eval_strings_precision[0].avg, eval_strings_precision[1].avg, eval_strings_precision[2].avg, eval_strings_precision[3].avg])
-
-    global_fingers_precision = np.array(
-        [eval_fingers_precision[0].avg, eval_fingers_precision[1].avg, eval_fingers_precision[2].avg,
-         eval_fingers_precision[3].avg])
-
-    global_frets_precision = np.array(
-        [eval_frets_precision[0].avg, eval_frets_precision[1].avg, eval_frets_precision[2].avg,
-         eval_frets_precision[3].avg])
-
-    return eval_fingers_recall.avg, eval_frets_recall.avg, eval_strings_recall.avg, global_fingers_precision, global_frets_precision, global_strings_precision
+    return eval_fingers_recall.avg, eval_frets_recall.avg, eval_strings_recall.avg, eval_fingers_precision.avg, \
+           eval_frets_precision.avg, eval_strings_precision.avg

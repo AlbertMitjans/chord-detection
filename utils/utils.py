@@ -11,6 +11,7 @@ from skimage.feature import peak_local_max
 from data.dataset import CornersDataset
 from loss.loss import JointsMSELoss
 from models.Stacked_Hourglass import HourglassNet, Bottleneck
+from models.my_model import MyModel
 from transforms.rand_crop import RandomCrop
 from transforms.rand_horz_flip import HorizontalFlip
 from transforms.rescale import Rescale
@@ -59,6 +60,12 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     model = nn.DataParallel(model)
     model.to(device)'''
 
+    model2 = MyModel()
+
+    model = nn.Sequential(model, model2)
+    model = nn.DataParallel(model)
+    model.to(device)
+
     end_file = '.jpg'
 
     cudnn.benchmark = True
@@ -75,7 +82,7 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     return model, train_dataset, val_dataset, criterion, optimizer
 
 
-def accuracy(fingers, output, target, global_recall, global_precision):
+def accuracy(fingers, output, target, global_recall, global_precision, min_dist):
     """Computes the precision@k for the specified values of k"""
     batch_size = target.size(0)
 
@@ -84,71 +91,69 @@ def accuracy(fingers, output, target, global_recall, global_precision):
     target = target.cpu().detach().numpy()
 
     for batch_unit in range(batch_size):  # for each batch element
-        recall, precision, max_out = multiple_gaussians(output[batch_unit], target[batch_unit])
+        for joint in range(target.shape[1]):
+            recall, precision, max_out = multiple_gaussians(output[batch_unit][joint], target[batch_unit][joint], min_dist)
 
-        global_recall.update(recall)
-        for i, (a, b) in enumerate(sorted(fingers[batch_unit], key=lambda x: x[0], reverse=True)):
-            if a != -1 and b != -1 and i < 4:
-                global_precision[i].update(precision[i])
-
-    return max_out
+            global_recall.update(recall)
+            if max_out.shape[0] != 0:
+                global_precision.update(precision)
 
 
-def multiple_gaussians(output, target):
+def multiple_gaussians(output, target, min_dist):
     # we calculate the positions of the max value in output and target
-    max_target = peak_local_max(target[0], min_distance=5, exclude_border=False,
+    max_target = peak_local_max(target, min_distance=min_dist, exclude_border=False,
                                 indices=False)  # num_peaks=4)
     labels_target = label(max_target)[0]
     max_target = np.array(center_of_mass(max_target, labels_target, range(1, np.max(labels_target) + 1))).astype(np.int)
 
-    true_p = np.array([0, 0, 0, 0]).astype(np.float)
-    all_p = np.array([0, 0, 0, 0]).astype(np.float)
+    truep = 0
+    allp = 0
 
-    max_out = peak_local_max(output[0], min_distance=5, threshold_rel=0.5, exclude_border=False, indices=False)
+    max_out = peak_local_max(output, min_distance=min_dist, threshold_rel=0.5, exclude_border=False, indices=False)
     labels_out = label(max_out)[0]
     max_out = np.array(center_of_mass(max_out, labels_out, range(1, np.max(labels_out) + 1))).astype(np.int)
 
     max_values = []
 
     for index in max_out:
-        max_values.append(output[0][index[0]][index[1]])
+        max_values.append(output[index[0]][index[1]])
 
     max_out = np.array([x for _, x in sorted(zip(max_values, max_out), reverse=True, key=lambda x: x[0])])
 
-    for n in range(min(4, max_target.shape[0])):
+    for n in range(max_target.shape[0]):
         max_out2 = max_out[:n + 1]
         for i, (c, d) in enumerate(max_out2):
             if i < max_out2.shape[0] - 1:
                 dist = np.absolute((max_out2[i + 1][0] - c, max_out2[i + 1][1] - d))
                 if dist[0] <= 5 and dist[1] <= 5:
                     continue
-            all_p[n] += 1
+            allp += 1
             count = 0
             for (a, b) in max_target:
                 l = np.absolute((a - c, b - d))
                 if l[0] <= 5 and l[1] <= 5:
-                    true_p[n] += 1
+                    truep += 1
                     count += 1
                     if count > 1:
-                        all_p[n] += 1
+                        allp += 1
 
-    num_targets = max_target.shape[0]
-
-    if num_targets == 0:
-        recall = 0
-        precision = np.array([0, 0, 0, 0]).astype(np.float)
+    if max_out.shape[0] == 0:
+        total_recall = 0
+        total_precision = 0
+    elif max_target.shape[0] == 0:
+        total_recall = 0
+        total_precision = 0
     else:
-        recall = true_p[min(4, max_out.shape[0]) - 1] / num_targets
-        precision = true_p / all_p
-        precision[np.isnan(precision)] = 0
+        total_recall = min(truep, max_target.shape[0]) / max_target.shape[0]
+        total_precision = truep / allp
 
-    import matplotlib.pyplot as plt
+    '''import matplotlib.pyplot as plt
     import torchvision.transforms as transforms
     fig, ax = plt.subplots(1, 2)
     ax[0].imshow(target[0], cmap='gray')
     ax[1].imshow(output[0], cmap='gray')
     plt.show()
 
-    print(precision)
+    print(precision)'''
 
-    return recall, precision, max_out
+    return total_recall, total_precision, max_out

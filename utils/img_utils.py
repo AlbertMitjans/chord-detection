@@ -23,8 +23,8 @@ def compute_gradient(image):
     return gradient[0]
 
 
-def local_max(image):
-    max_out = peak_local_max(image, min_distance=5, threshold_rel=0.3, threshold_abs=0.1, exclude_border=False, indices=False)
+def local_max(image, min_dist):
+    max_out = peak_local_max(image, min_distance=min_dist, threshold_rel=0.3, threshold_abs=0.1, exclude_border=False, indices=False)
     labels_out = label(max_out)[0]
     max_out = np.array(center_of_mass(max_out, labels_out, range(1, np.max(labels_out) + 1))).astype(np.int)
     max_values = []
@@ -37,8 +37,8 @@ def local_max(image):
     return max_out
 
 
-def corner_mask(output):
-    max_coord = local_max(output)
+def corner_mask(output, min_dist):
+    max_coord = local_max(output, min_dist)
     corners = torch.zeros(3, output.shape[0], output.shape[1])
     for idx, (i, j) in enumerate(max_coord):
         cx, cy = draw.circle_perimeter(i, j, 9, shape=output.shape)
@@ -48,8 +48,8 @@ def corner_mask(output):
     return corners, max_coord
 
 
-def save_img(input, output, name):
-    corners, max_coord = corner_mask(output[0])
+def save_img(input, output, min_dist, name):
+    corners, max_coord = corner_mask(output, min_dist)
     rgb, corners = transforms.ToPILImage()(input), transforms.ToPILImage()(corners)
     image = Image.blend(rgb, corners, 0.3)
     plt.ioff()
@@ -59,7 +59,7 @@ def save_img(input, output, name):
     ax[1].set_title('RGB image')
     ax[0].axis('off')
     ax[0].set_title('Network\'s output')
-    ax[0].imshow(output[0], cmap='afmhot', vmin=0, vmax=1)
+    ax[0].imshow(output, cmap='afmhot', vmin=0, vmax=1)
     ax[1].imshow(rgb)
     for (x, y) in max_coord:
         ax[1].scatter(y, x)

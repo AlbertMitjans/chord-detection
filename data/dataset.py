@@ -104,32 +104,38 @@ class CornersDataset(Dataset):
         notes_grid = notes_grid / notes_grid.max()
 
         target_grid = torch.cat((tip_grid, knuckles1_grid, knuckles2_grid))
-        target = np.stack(tip, knuckles1, knuckles2)
+        target = np.stack((tip, knuckles1, knuckles2))
 
         frets_grid = transforms.ToTensor()(gaussian(image, frets, kernel=int(image.shape[1] / 10), target_size=image[0].size())).type(torch.float32)
         frets_grid = frets_grid / frets_grid.max()
 
-        strings_grid = transforms.ToTensor()(gaussian(image, strings, kernel=int(image.shape[1] / 10), target_size=image[0].size())).type(torch.float32)
+        strings_grid = transforms.ToTensor()(gaussian(image, strings, kernel=int(image.shape[1] / 13), target_size=image[0].size())).type(torch.float32)
         strings_grid = strings_grid / strings_grid.max()
 
-        sample = {'image': image, 'tip': tip_grid, 'knuckle1': knuckles1_grid, 'knuckle2': knuckles2_grid,
-                  'notes': notes_grid, 'frets': frets_grid, 'strings': strings_grid, 'img_name': img_number,
-                  'tip_coord': tip, 'knuckle1_coord': knuckles1, 'knuckle2_coord': knuckles2, 'notes_coord': notes,
-                  'fret_coord': frets, 'string_coord': strings}
+        sample = {'image': image, 'target': target_grid, 'frets': frets_grid, 'strings': strings_grid,
+                  'img_name': img_number, 'target_coord': target, 'fret_coord': frets, 'string_coord': strings}
 
         if self.transform:
             sample = self.transform(sample)
 
         sample['image'] = pad_to_square(sample['image'])
-        sample['fingers'] = pad_to_square(sample['fingers'])
+        sample['target'] = pad_to_square(sample['target'])
         sample['frets'] = pad_to_square(sample['frets'])
         sample['strings'] = pad_to_square(sample['strings'])
 
-        '''fig, ax = plt.subplots(1, 4)
-        ax[0].imshow(transforms.ToPILImage()(sample['fingers']), cmap='gray')
-        ax[1].imshow(transforms.ToPILImage()(sample['frets']), cmap='gray')
-        ax[2].imshow(transforms.ToPILImage()(sample['strings']), cmap='gray')
-        ax[3].imshow(transforms.ToPILImage()(sample['image']))
+        '''fig, ax = plt.subplots(2, 3)
+        ax[0][0].axis('off')
+        ax[0][1].axis('off')
+        ax[0][2].axis('off')
+        ax[1][0].axis('off')
+        ax[1][1].axis('off')
+        ax[1][2].axis('off')
+        ax[0][0].imshow(transforms.ToPILImage()(sample['target'][0]), cmap='gray')
+        ax[0][1].imshow(transforms.ToPILImage()(sample['target'][1]), cmap='gray')
+        ax[0][2].imshow(transforms.ToPILImage()(sample['target'][2]), cmap='gray')
+        ax[1][0].imshow(transforms.ToPILImage()(sample['frets']), cmap='gray')
+        ax[1][1].imshow(transforms.ToPILImage()(sample['strings']), cmap='gray')
+        ax[1][2].imshow(transforms.ToPILImage()(sample['image']))
         plt.show()'''
 
         return sample

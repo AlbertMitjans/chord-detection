@@ -30,8 +30,10 @@ for root, dirs, files in os.walk(os.path.join(directory, 'images')):
                 shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '.csv'))
                 shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_frets.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_frets.csv'))
                 shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_strings.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_strings.csv'))
-                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_fingers.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_fingers.csv'))
-                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_hand.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_hand.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_tip.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_tip.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_knuckle1.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_knuckle1.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_knuckle2.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_knuckle2.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_notes.csv'), os.path.join(directory, 'train_dataset', os.path.splitext(file)[0] + '_notes.csv'))
             else:
                 shutil.copy(os.path.join(directory, 'images', file), os.path.join(directory, 'val_dataset', file))
                 shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '.csv'),
@@ -40,9 +42,13 @@ for root, dirs, files in os.walk(os.path.join(directory, 'images')):
                             os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_frets.csv'))
                 shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_strings.csv'),
                             os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_strings.csv'))
-                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_fingers.csv'),
-                            os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_fingers.csv'))
-                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_hand.csv'),
-                            os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_hand.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_tip.csv'),
+                            os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_tip.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_knuckle1.csv'),
+                            os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_knuckle1.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_knuckle2.csv'),
+                            os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_knuckle2.csv'))
+                shutil.copy(os.path.join(directory, 'images', os.path.splitext(file)[0] + '_notes.csv'),
+                            os.path.join(directory, 'val_dataset', os.path.splitext(file)[0] + '_notes.csv'))
 
 

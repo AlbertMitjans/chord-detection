@@ -170,8 +170,6 @@ class HourglassNet(nn.Module):
         self.fc_3 = nn.ModuleList(fc_3)
         self.score_3 = nn.ModuleList(score_3)
 
-        self.conv2 = nn.Conv2d(16, 1, kernel_size=1)
-
     def _make_residual(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -222,7 +220,6 @@ class HourglassNet(nn.Module):
             y1 = self.fc1[i](y1)
             score1 = self.score1[i](y1)
             end_score1 = F.interpolate(score1, shape)
-            end_score1 = self.conv2(end_score1)
             out1.append(end_score1)
 
             y2 = self.hg2[i](x2)
@@ -230,7 +227,6 @@ class HourglassNet(nn.Module):
             y2 = self.fc2[i](y2)
             score2 = self.score2[i](y2)
             end_score2 = F.interpolate(score2, shape)
-            end_score2 = self.conv2(end_score2)
             out2.append(end_score2)
 
             y3 = self.hg3[i](x3)
@@ -238,7 +234,6 @@ class HourglassNet(nn.Module):
             y3 = self.fc3[i](y3)
             score3 = self.score3[i](y3)
             end_score3 = F.interpolate(score3, shape)
-            end_score3 = self.conv2(end_score3)
             out3.append(end_score3)
 
             if i < self.num_stacks-1:
