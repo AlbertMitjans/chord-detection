@@ -18,12 +18,13 @@ def natural_keys(text):
     return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
-directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data'))
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data/mpii'))
 
 for root, dirs, files in os.walk(os.path.join(directory, 'images')):
     files.sort(key=natural_keys)
     for i, file in enumerate(files):
         if file.endswith('.jpg'):
+            print(i)
             x = np.random.random()
             if x < 0.8:
                 shutil.copy(os.path.join(directory, 'images', file), os.path.join(directory, 'train_dataset', file))

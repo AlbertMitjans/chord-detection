@@ -22,6 +22,7 @@ class CornersDataset(Dataset):
         self.notes = []
         self.frets = []
         self.strings = []
+        self.features = []
         self.colors = []
         self.root_dir = root_dir
         self.transform = transform
@@ -31,11 +32,22 @@ class CornersDataset(Dataset):
         self.read_csv()
 
     def read_csv(self):
+        print('Downloading dataset')
         for root, dirs, files in os.walk(self.root_dir):
             files.sort(key=natural_keys)
             for file in files:
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
+                    j = 0
+                    features = []
+                    while True:
+                        try:
+                            f = pd.read_csv(os.path.join(self.root_dir, os.path.splitext(file)[0] + '_{num}.csv'.format(num=j)), header=None).values
+                            features.append(f)
+                            j += 1
+                        except FileNotFoundError:
+                            break
+                    self.features.append(features)
                 if file.endswith("_frets.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
                     self.frets.append(f)
@@ -60,6 +72,7 @@ class CornersDataset(Dataset):
 
     def __len__(self):
         return len(self.img_names)
+
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -146,7 +159,7 @@ def gaussian(image, corners, kernel=5, nsig=5, target_size=(304, 495)):
     n = float(image.shape[1]) / float(target.shape[1])
     m = float(image.shape[2]) / float(target.shape[2])
     for i, (x, y) in enumerate(corners):
-        if x != -1 and y != -1:
+        if x >= 0 and y >= 0:
             a = int(x / n)
             b = int(y / m)
             x = np.linspace(-nsig, nsig, kernel)
@@ -156,7 +169,7 @@ def gaussian(image, corners, kernel=5, nsig=5, target_size=(304, 495)):
             ay = b - kern2d.shape[1] // 2
             paste(target[i], kern2d / kern2d.max(), (ay, ax))
 
-    target = np.resize(target.sum(0), (target_size[0], target_size[1], 1))
+    target = np.moveaxis(target, (0, 1, 2), (2, 0, 1))
 
     return target
 

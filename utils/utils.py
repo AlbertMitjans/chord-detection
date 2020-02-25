@@ -75,9 +75,9 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     rescale = Rescale((300, 300))
 
     train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file,
-                                   transform=transforms.Compose([rescale]))
+                                   transform=transforms.Compose([horizontal_flip, rescale]))
     val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file,
-                                 transform=transforms.Compose([rescale]))
+                                 transform=transforms.Compose([horizontal_flip, rescale]))
 
     return model, train_dataset, val_dataset, criterion, optimizer
 
@@ -101,8 +101,7 @@ def accuracy(fingers, output, target, global_recall, global_precision, min_dist)
 
 def multiple_gaussians(output, target, min_dist):
     # we calculate the positions of the max value in output and target
-    max_target = peak_local_max(target, min_distance=min_dist, exclude_border=False,
-                                indices=False)  # num_peaks=4)
+    max_target = peak_local_max(target, min_distance=min_dist, exclude_border=False, indices=False)  # num_peaks=4)
     labels_target = label(max_target)[0]
     max_target = np.array(center_of_mass(max_target, labels_target, range(1, np.max(labels_target) + 1))).astype(np.int)
 

@@ -11,7 +11,7 @@ parser.add_argument("--display_time", type=int, default=3, help="time of the dis
                                                                 "colored circles")
 opt = parser.parse_args()
 
-i = 0
+i = 211
 
 try:
     path = os.path.abspath(opt.path)
@@ -36,62 +36,89 @@ while True:
     fig.suptitle('Image {top1}'.format(top1=i))
     plt.imshow(img)
 
-    lines = []
-    nails = []
-    knuckles = []
+    tip = []
+    knuckle1 = []
+    knuckle2 = []
+    notes = []
 
     def onclick_1(event):
         ix, iy = event.xdata, event.ydata
-        lines.append([ix, iy])
-        ax.axhline(y=iy)
-        ax.axvline(x=ix)
+        if ix is None and iy is None:
+            tip.append([-1, -1])
+        else:
+            tip.append([ix, iy])
+        ax.scatter(ix, iy, c='red')
 
     def onclick_2(event):
+        ix, iy = event.xdata, event.ydata
+        if ix is None and iy is None:
+            knuckle1.append([-1, -1])
+        else:
+            knuckle1.append([ix, iy])
+        ax.scatter(ix, iy, c='blue')
+
+    def onclick_3(event):
+        ix, iy = event.xdata, event.ydata
+        if ix is None and iy is None:
+            knuckle2.append([-1, -1])
+        else:
+            knuckle2.append([ix, iy])
+        ax.scatter(ix, iy, c='green')
+
+    def onclick_5(event):
+        ix, iy = event.xdata, event.ydata
+        if ix is None and iy is None:
+            notes.append([-1, -1])
+        else:
+            notes.append([ix, iy])
+        ax.scatter(ix, iy, c='purple')
+
+    '''def onclick_2(event):
         ix, iy = event.xdata, event.ydata
         circle = plt.Circle((ix, iy), img.shape[0]/600, color='r')
         ax.add_artist(circle)
         if ix is None:
             stop['stop'] = True
         else:
-            nails.append([ix, iy])
+            nails.append([ix, iy])'''
 
-    def onclick_3(event):
-        ix, iy = event.xdata, event.ydata
-        circle = plt.Circle((ix, iy), img.shape[0]/600, color='b')
-        ax.add_artist(circle)
-        if ix is None:
-            knuckles.append([-1, -1])
-        else:
-            knuckles.append([ix, iy])
-
-    '''for a in range(2):
+    for a in range(4):
         o1 = fig.canvas.mpl_connect('button_press_event', onclick_1)
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o1)
 
-    plt.xlim(lines[0][0], lines[1][0])
-    plt.ylim(lines[1][1], lines[0][1])'''
+    for a in range(4):
+        o2 = fig.canvas.mpl_connect('button_press_event', onclick_2)
+        plt.waitforbuttonpress()
+        fig.canvas.mpl_disconnect(o2)
 
-    stop = {'stop': False}
+    for a in range(4):
+        o3 = fig.canvas.mpl_connect('button_press_event', onclick_3)
+        plt.waitforbuttonpress()
+        fig.canvas.mpl_disconnect(o3)
+
+    for a in range(4):
+        o5 = fig.canvas.mpl_connect('button_press_event', onclick_5)
+        plt.waitforbuttonpress()
+        fig.canvas.mpl_disconnect(o5)
+
+    '''stop = {'stop': False}
 
     while True:
         o2 = fig.canvas.mpl_connect('button_press_event', onclick_2)
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o2)
         if stop['stop']:
-            break
-
-    '''for j in range(4):
-        o3 = fig.canvas.mpl_connect('button_press_event', onclick_3)
-        plt.waitforbuttonpress()
-        fig.canvas.mpl_disconnect(o3)'''
+            break'''
 
     plt.close('all')
 
-    #np.savetxt(os.path.join(directory, 'image{top1}_fingers.csv'.format(top1=i)), np.asarray(nails), delimiter=',', fmt='%.3f')
-    np.savetxt(os.path.join(directory, 'image{top1}_frets.csv'.format(top1=i)), np.asarray(nails), delimiter=',',
+    np.savetxt(os.path.join(directory, 'image{top1}_tip.csv'.format(top1=i)), np.asarray(tip), delimiter=',', fmt='%.3f')
+    np.savetxt(os.path.join(directory, 'image{top1}_knuckle1.csv'.format(top1=i)), np.asarray(knuckle1), delimiter=',',
+                fmt='%.3f')
+    np.savetxt(os.path.join(directory, 'image{top1}_knuckle2.csv'.format(top1=i)), np.asarray(knuckle2), delimiter=',',
+                fmt='%.3f')
+    np.savetxt(os.path.join(directory, 'image{top1}_notes.csv'.format(top1=i)), np.asarray(notes), delimiter=',',
                fmt='%.3f')
-    '''np.savetxt(os.path.join(directory, 'image{top1}_knuckles.csv'.format(top1=i)), np.asarray(knuckles), delimiter=',',
-               fmt='%.3f')'''
 
     i += 1
