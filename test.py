@@ -29,17 +29,12 @@ def test(val_loader, model, device, save_imgs=False, show=False):
 
     for data_idx, data in enumerate(val_loader):
         input = data['image'].float().to(device)
-<<<<<<< HEAD
         target = data['target'].float().to(device)
         frets = data['frets'].float().to(device)
         strings = data['strings'].float().to(device)
         target_coord = data['target_coord']
         frets_coord = data['fret_coord']
         strings_coord = data['string_coord']
-=======
-        features = data['features'].float().to(device)
-        feature_coord = data['features_coord']
->>>>>>> 8d41d9875e42b423d36aa689bac9c690c7146758
 
         # compute output
         output1 = model(input)[0].split(input.shape[0], dim=0)
@@ -50,52 +45,31 @@ def test(val_loader, model, device, save_imgs=False, show=False):
             import matplotlib.pyplot as plt
             import torchvision.transforms as transforms
             fig, ax = plt.subplots(1, 3)
-<<<<<<< HEAD
             ax[0].imshow(target[0][0].cpu(), cmap='gray')
-=======
-            ax[0].imshow(features[0][0].cpu(), cmap='gray')
->>>>>>> 8d41d9875e42b423d36aa689bac9c690c7146758
             ax[1].imshow(output1[-1][0][0].cpu().detach(), cmap='gray')
             ax[2].imshow(transforms.ToPILImage()(input.cpu()[0]))
             plt.show()
 
         # measure accuracy
-<<<<<<< HEAD
         accuracy(output=output1[-1].data, target=target,
                  global_precision=eval_fingers_precision, global_recall=eval_fingers_recall, fingers=target_coord,
                  min_dist= 10)
-=======
-        accuracy(output=output1[-1].data, target=features,
-                 global_precision=eval_fingers_precision, global_recall=eval_fingers_recall, fingers=feature_coord)
->>>>>>> 8d41d9875e42b423d36aa689bac9c690c7146758
 
-        accuracy(output=output2[-1].data, target=features,
+        accuracy(output=output2[-1].data, target=frets,
                  global_precision=eval_frets_precision, global_recall=eval_frets_recall,
-<<<<<<< HEAD
                  fingers=frets_coord.unsqueeze(0), min_dist=5)
-=======
-                 fingers=feature_coord)
->>>>>>> 8d41d9875e42b423d36aa689bac9c690c7146758
 
-        accuracy(output=output3[-1].data, target=features,
+        accuracy(output=output3[-1].data, target=strings,
                  global_precision=eval_strings_precision, global_recall=eval_strings_recall,
-<<<<<<< HEAD
                  fingers=strings_coord.unsqueeze(0), min_dist=5)
 
         if save_imgs:
-            save_img(input.cpu().detach()[0], output1[-1][0][0].cpu().detach().numpy(), 10, data['img_name'][0] + '_top')
-            save_img(input.cpu().detach()[0], output1[-1][0][1].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles1')
-            save_img(input.cpu().detach()[0], output1[-1][0][2].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles2')
-            save_img(input.cpu().detach()[0], output2[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_frets')
-            save_img(input.cpu().detach()[0], output3[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_strings')
-=======
-                 fingers=feature_coord)
-
-        if save_imgs:
-            save_img(input.cpu().detach()[0], output1[-1].cpu().detach().numpy()[0], data['img_name'][0] + '_fingers')
-            save_img(input.cpu().detach()[0], output2[-1].cpu().detach().numpy()[0], data['img_name'][0] + '_frets')
-            save_img(input.cpu().detach()[0], output3[-1].cpu().detach().numpy()[0], data['img_name'][0] + '_strings')
->>>>>>> 8d41d9875e42b423d36aa689bac9c690c7146758
+            for i in range(output1.__len__()):
+                save_img(input.cpu().detach()[0], output1[i][0][0].cpu().detach().numpy(), 10, data['img_name'][0] + '_top_{num}'.format(num=i))
+                save_img(input.cpu().detach()[0], output1[i][0][1].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles1_{num}'.format(num=i))
+                #save_img(input.cpu().detach()[0], output1[i][0][2].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles2_{num}'.format(num=i))
+                save_img(input.cpu().detach()[0], output2[i][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_frets_{num}'.format(num=i))
+                save_img(input.cpu().detach()[0], output3[i][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_strings_{num}'.format(num=i))
 
         # measure elapsed time
         batch_time.update(time.time() - end)

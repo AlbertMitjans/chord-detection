@@ -46,25 +46,17 @@ def adjust_learning_rate(optimizer, epoch, lr):
 def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=0):
     # define the model
     model = HourglassNet(Bottleneck)
+    model2 = MyModel()
+    model = nn.Sequential(model, model2)
     model = nn.DataParallel(model)
     model.to(device)
     # define loss function (criterion) and optimizer
     criterion = JointsMSELoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    '''checkpoint = torch.load("checkpoints/hg_s2_b1/model_best.pth.tar", map_location=device)
-    model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-
-    model = nn.Sequential(model, nn.Conv2d(16, 1, kernel_size=1).to(device))
-    model = nn.DataParallel(model)
-    model.to(device)'''
-
-    model2 = MyModel()
-
-    model = nn.Sequential(model, model2)
-    model = nn.DataParallel(model)
-    model.to(device)
+    checkpoint = torch.load("checkpoints/best_ckpt/mt-fingers.pth", map_location=device)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     end_file = '.jpg'
 
@@ -75,9 +67,9 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=
     rescale = Rescale((300, 300))
 
     train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file,
-                                   transform=transforms.Compose([horizontal_flip, rescale]))
+                                   transform=transforms.Compose([rescale]))
     val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file,
-                                 transform=transforms.Compose([horizontal_flip, rescale]))
+                                 transform=transforms.Compose([rescale]))
 
     return model, train_dataset, val_dataset, criterion, optimizer
 

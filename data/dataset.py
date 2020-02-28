@@ -38,16 +38,6 @@ class CornersDataset(Dataset):
             for file in files:
                 if file.endswith(self.end_file):
                     self.img_names.append(file)
-                    j = 0
-                    features = []
-                    while True:
-                        try:
-                            f = pd.read_csv(os.path.join(self.root_dir, os.path.splitext(file)[0] + '_{num}.csv'.format(num=j)), header=None).values
-                            features.append(f)
-                            j += 1
-                        except FileNotFoundError:
-                            break
-                    self.features.append(features)
                 if file.endswith("_frets.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
                     self.frets.append(f)
@@ -72,7 +62,6 @@ class CornersDataset(Dataset):
 
     def __len__(self):
         return len(self.img_names)
-
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -116,8 +105,8 @@ class CornersDataset(Dataset):
         notes_grid = transforms.ToTensor()(gaussian(image, notes, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
         notes_grid = notes_grid / notes_grid.max()
 
-        target_grid = torch.cat((tip_grid, knuckles1_grid, knuckles2_grid))
-        target = np.stack((tip, knuckles1, knuckles2))
+        target_grid = torch.cat((tip_grid, knuckles2_grid))
+        target = np.stack((tip, knuckles2))
 
         frets_grid = transforms.ToTensor()(gaussian(image, frets, kernel=int(image.shape[1] / 10), target_size=image[0].size())).type(torch.float32)
         frets_grid = frets_grid / frets_grid.max()
@@ -145,7 +134,6 @@ class CornersDataset(Dataset):
         ax[1][2].axis('off')
         ax[0][0].imshow(transforms.ToPILImage()(sample['target'][0]), cmap='gray')
         ax[0][1].imshow(transforms.ToPILImage()(sample['target'][1]), cmap='gray')
-        ax[0][2].imshow(transforms.ToPILImage()(sample['target'][2]), cmap='gray')
         ax[1][0].imshow(transforms.ToPILImage()(sample['frets']), cmap='gray')
         ax[1][1].imshow(transforms.ToPILImage()(sample['strings']), cmap='gray')
         ax[1][2].imshow(transforms.ToPILImage()(sample['image']))
@@ -169,7 +157,7 @@ def gaussian(image, corners, kernel=5, nsig=5, target_size=(304, 495)):
             ay = b - kern2d.shape[1] // 2
             paste(target[i], kern2d / kern2d.max(), (ay, ax))
 
-    target = np.moveaxis(target, (0, 1, 2), (2, 0, 1))
+    target = target.sum(axis=0)
 
     return target
 

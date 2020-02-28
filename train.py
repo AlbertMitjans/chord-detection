@@ -16,10 +16,10 @@ def train(ckpt, num_epochs, batch_size, device):
     momentum = 0
     weight_decay = 0
 
-    directory = 'data/mpii/'
+    directory = 'data/'
     start_epoch = 0
     start_loss = 0
-    print_freq = 1
+    print_freq = 20
     checkpoint_interval = 1
     evaluation_interval = 1
 
@@ -82,57 +82,24 @@ def train(ckpt, num_epochs, batch_size, device):
             output2 = model(input)[1].split(input.shape[0], dim=0)
             output3 = model(input)[2].split(input.shape[0], dim=0)
 
-            loss1 = sum(i*criterion_grid(o, target) for i, o in enumerate(output1))
-            loss2 = sum(i * criterion_grid(o, frets) for i, o in enumerate(output2))
-            loss3 = sum(i * criterion_grid(o, strings) for i, o in enumerate(output3))
+            loss1 = sum(criterion_grid(o, target) for o in output1)
+            loss2 = sum(criterion_grid(o, frets) for o in output2)
+            loss3 = sum(criterion_grid(o, strings) for o in output3)
 
-
-            loss = loss1 #+ loss2 + loss3
+            loss = loss1/2 + loss2 + loss3
 
             # measure accuracy and record loss
             accuracy(output=output1[-1].data, target=target,
                      global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=target_coord,
                      min_dist=10)
 
-            accuracy(output=output2[-1].data, target=features,
+            accuracy(output=output2[-1].data, target=frets,
                      global_precision=train_frets_precision, global_recall=train_frets_recall,
                      fingers=frets_coord.unsqueeze(0), min_dist=5)
 
-            accuracy(output=output3[-1].data, target=features,
+            accuracy(output=output3[-1].data, target=strings,
                      global_precision=train_strings_precision, global_recall=train_strings_recall,
                      fingers=strings_coord.unsqueeze(0), min_dist=5)
-
-            '''import matplotlib.pyplot as plt
-            from torchvision import transforms as transforms
-            fig, ax = plt.subplots(2, 4)
-            ax[0][0].axis('off')
-            ax[0][1].axis('off')
-            ax[0][2].axis('off')
-            ax[0][3].axis('off')
-            ax[1][0].axis('off')
-            ax[1][1].axis('off')
-            ax[1][2].axis('off')
-            ax[1][3].axis('off')
-            ax[0][0].imshow(data['target'][0][0], cmap='gray')
-            ax[0][1].imshow(data['target'][0][1], cmap='gray')
-            ax[0][2].imshow(data['target'][0][2], cmap='gray')
-            ax[0][3].imshow(data['target'][0][3], cmap='gray')
-            ax[1][0].imshow(transforms.ToPILImage()(data['frets'][0]), cmap='gray')
-            ax[1][1].imshow(transforms.ToPILImage()(data['strings'][0]), cmap='gray')
-            ax[1][2].imshow(transforms.ToPILImage()(data['image'][0]))'''
-
-            import matplotlib.pyplot as plt
-            import torchvision.transforms as transforms
-            fig, ax = plt.subplots(1, 4)
-            ax[0].axis('off')
-            ax[1].axis('off')
-            ax[2].axis('off')
-            ax[3].axis('off')
-            ax[0].imshow(output1[-1][0][0].cpu().detach(), cmap='gray')
-            ax[1].imshow(output2[-1][0][0].cpu().detach(), cmap='gray')
-            ax[2].imshow(output3[-1][0][0].cpu().detach(), cmap='gray')
-            ax[3].imshow(transforms.ToPILImage()(data['image'][0].cpu()))
-            plt.show()
 
             train_loss.update(loss.item())
 
