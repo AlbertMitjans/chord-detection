@@ -26,7 +26,7 @@ def train(ckpt, num_epochs, batch_size, device):
     logger = Logger('./logs')
 
     model, train_dataset, val_dataset, criterion_grid, optimizer = init_model_and_dataset(directory, device, lr,
-                                                                                          weight_decay, momentum)
+                                                                                          weight_decay)
 
     # load the pretrained network
     if ckpt is not None:

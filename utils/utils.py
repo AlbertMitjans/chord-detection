@@ -43,7 +43,7 @@ def adjust_learning_rate(optimizer, epoch, lr):
         param_group['lr'] = lr
 
 
-def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0, momentum=0):
+def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0):
     # define the model
     model = HourglassNet(Bottleneck)
     model2 = MyModel()

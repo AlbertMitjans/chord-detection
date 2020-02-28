@@ -24,7 +24,7 @@ def compute_gradient(image):
 
 
 def local_max(image, min_dist):
-    max_out = peak_local_max(image, min_distance=min_dist, threshold_rel=0.3, threshold_abs=0.1, exclude_border=False, indices=False)
+    max_out = peak_local_max(image, min_distance=min_dist, threshold_rel=0.5, threshold_abs=0.1, exclude_border=False, indices=False)
     labels_out = label(max_out)[0]
     max_out = np.array(center_of_mass(max_out, labels_out, range(1, np.max(labels_out) + 1))).astype(np.int)
     max_values = []
