@@ -50,17 +50,17 @@ def fill_values(frets, strings):
 
         v1 = []
         d1 = []
-        strings = []
+        strings_2 = []
 
         for i, val in enumerate(v1_all):
             if np.abs(np.dot(val, v1_allmin))/np.linalg.norm(val)/np.linalg.norm(v1_allmin) >= 0.8:
                 v1.append(val)
                 d1.append(d1_all[i])
-                if strings.__len__() == 0:
-                    strings.append(strings[i])
-                strings.append(strings[i + 1])
+                if strings_2.__len__() == 0:
+                    strings_2.append(strings[i])
+                strings_2.append(strings[i + 1])
 
-        strings = np.array(strings)
+        strings = np.array(strings_2)
         v1min = v1[np.argmin(d1)]
 
         # We fill the empty values between two detected strings
@@ -236,7 +236,7 @@ model = nn.Sequential(model, model2)
 model = nn.DataParallel(model)
 model.to(device)
 
-checkpoint = torch.load('checkpoints/hg_ckpt_98.pth')
+checkpoint = torch.load('checkpoints/hg_ckpt_33.pth')
 
 model.load_state_dict(checkpoint['model_state_dict'])
 

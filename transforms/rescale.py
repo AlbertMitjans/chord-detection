@@ -35,9 +35,7 @@ class Rescale(object):
         resize = transform.Resize((new_h, new_w))
 
         img = transform.ToTensor()(resize(transform.ToPILImage()(image)))
-        target1 = transform.ToTensor()(resize(transform.ToPILImage()(target[0])))
-        target2 = transform.ToTensor()(resize(transform.ToPILImage()(target[1])))
-        target = torch.cat((target1, target2))
+        target = transform.ToTensor()(resize(transform.ToPILImage()(target)))
         frets = transform.ToTensor()(resize(transform.ToPILImage()(frets)))
         strings = transform.ToTensor()(resize(transform.ToPILImage()(strings)))
 

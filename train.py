@@ -78,9 +78,10 @@ def train(ckpt, num_epochs, batch_size, device):
             strings_coord = data['string_coord']
 
             # compute output
-            output1 = model(input)[0].split(input.shape[0], dim=0)
-            output2 = model(input)[1].split(input.shape[0], dim=0)
-            output3 = model(input)[2].split(input.shape[0], dim=0)
+            output = model(input)
+            output1 = output[0].split(input.shape[0], dim=0)
+            output2 = output[1].split(input.shape[0], dim=0)
+            output3 = output[2].split(input.shape[0], dim=0)
 
             loss1 = sum(criterion_grid(o, target) for o in output1)
             loss2 = sum(criterion_grid(o, frets) for o in output2)

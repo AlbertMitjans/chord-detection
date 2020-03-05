@@ -54,7 +54,7 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0):
     criterion = JointsMSELoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    checkpoint = torch.load("checkpoints/best_ckpt/mt-fingers.pth", map_location=device)
+    checkpoint = torch.load("checkpoints/best_ckpt/hg_ckpt_35.pth", map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 

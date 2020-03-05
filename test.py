@@ -64,12 +64,11 @@ def test(val_loader, model, device, save_imgs=False, show=False):
                  fingers=strings_coord.unsqueeze(0), min_dist=5)
 
         if save_imgs:
-            for i in range(output1.__len__()):
-                save_img(input.cpu().detach()[0], output1[i][0][0].cpu().detach().numpy(), 10, data['img_name'][0] + '_top_{num}'.format(num=i))
-                save_img(input.cpu().detach()[0], output1[i][0][1].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles1_{num}'.format(num=i))
-                #save_img(input.cpu().detach()[0], output1[i][0][2].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles2_{num}'.format(num=i))
-                save_img(input.cpu().detach()[0], output2[i][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_frets_{num}'.format(num=i))
-                save_img(input.cpu().detach()[0], output3[i][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_strings_{num}'.format(num=i))
+            save_img(input.cpu().detach()[0], output1[-1][0][0].cpu().detach().numpy(), 10, data['img_name'][0] + '_top')
+            save_img(input.cpu().detach()[0], output1[-1][0][1].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles1')
+            save_img(input.cpu().detach()[0], output1[-1][0][2].cpu().detach().numpy(), 10,  data['img_name'][0] + '_knuckles2')
+            save_img(input.cpu().detach()[0], output2[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_frets')
+            save_img(input.cpu().detach()[0], output3[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_strings')
 
         # measure elapsed time
         batch_time.update(time.time() - end)

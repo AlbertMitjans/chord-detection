@@ -44,7 +44,7 @@ class CornersDataset(Dataset):
                 if file.endswith("_strings.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
                     self.strings.append(f)
-                if file.endswith("_tip.csv"):
+                if file.endswith("_fingers.csv"):
                     f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
                     self.tip.append(f)
                 if file.endswith("_knuckle1.csv"):
@@ -78,14 +78,14 @@ class CornersDataset(Dataset):
         tip = np.array([self.tip[idx]])
         tip = tip.astype(int).reshape(-1, 2)
 
-        knuckles1 = np.array([self.knuckles1[idx]])
+        '''knuckles1 = np.array([self.knuckles1[idx]])
         knuckles1 = knuckles1.astype(int).reshape(-1, 2)
 
         knuckles2 = np.array([self.knuckles2[idx]])
         knuckles2 = knuckles2.astype(int).reshape(-1, 2)
 
         notes = np.array([self.notes[idx]])
-        notes = notes.astype(int).reshape(-1, 2)
+        notes = notes.astype(int).reshape(-1, 2)'''
 
         frets = np.array([self.frets[idx]])
         frets = frets.astype(int).reshape(-1, 2)
@@ -96,17 +96,17 @@ class CornersDataset(Dataset):
         tip_grid = transforms.ToTensor()(gaussian(image, tip, kernel=int(image.shape[1]/5), target_size=image[0].size())).type(torch.float32)
         tip_grid = tip_grid/tip_grid.max()
 
-        knuckles1_grid = transforms.ToTensor()(gaussian(image, knuckles1, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
+        '''knuckles1_grid = transforms.ToTensor()(gaussian(image, knuckles1, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
         knuckles1_grid = knuckles1_grid / knuckles1_grid.max()
 
         knuckles2_grid = transforms.ToTensor()(gaussian(image, knuckles2, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
         knuckles2_grid = knuckles2_grid / knuckles2_grid.max()
 
         notes_grid = transforms.ToTensor()(gaussian(image, notes, kernel=int(image.shape[1] / 5), target_size=image[0].size())).type(torch.float32)
-        notes_grid = notes_grid / notes_grid.max()
+        notes_grid = notes_grid / notes_grid.max()'''
 
-        target_grid = torch.cat((tip_grid, knuckles2_grid))
-        target = np.stack((tip, knuckles2))
+        target_grid = tip_grid
+        target = tip
 
         frets_grid = transforms.ToTensor()(gaussian(image, frets, kernel=int(image.shape[1] / 10), target_size=image[0].size())).type(torch.float32)
         frets_grid = frets_grid / frets_grid.max()

@@ -38,7 +38,7 @@ def local_max(image, min_dist, t_rel):
 
 
 def corner_mask(output, min_dist):
-    max_coord = local_max(output, min_dist)
+    max_coord = local_max(output, min_dist, t_rel=0.3)
     corners = torch.zeros(3, output.shape[0], output.shape[1])
     for idx, (i, j) in enumerate(max_coord):
         cx, cy = draw.circle_perimeter(i, j, 9, shape=output.shape)
@@ -66,6 +66,7 @@ def save_img(input, output, min_dist, name):
     Path('output/').mkdir(parents=True, exist_ok=True)
     plt.savefig('output/{image}.png'.format(image=name))
     plt.close('all')
+    print('Image {name} saved'.format(name=name))
 
 
 def show_corners(image, corners):
