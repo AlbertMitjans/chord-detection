@@ -10,6 +10,9 @@ from utils.img_utils import local_max
 import numpy as np
 import pandas as pd
 from utils.utils import AverageMeter
+from models.yolo import *
+from utils.yolo_utils import *
+import random
 
 
 def rescale(image, size):
@@ -230,6 +233,10 @@ def load_tabs():
 directory = 'data/'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+yolo = Darknet("config/yolov3-custom.cfg", img_size=416).to(device)
+yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo.pth', map_location=device))
+yolo.eval()
+
 model = HourglassNet(Bottleneck)
 model2 = MyModel()
 model = nn.Sequential(model, model2)
@@ -249,7 +256,39 @@ for root, dirs, files in os.walk(os.path.join(directory, 'images')):
         if file.endswith('.jpg'):
             image = Image.open(os.path.join(root, file))
             image = transforms.ToTensor()(image).type(torch.float32)[:3]
-            image = rescale(image, (300, 300)).unsqueeze(0).to(device)
+            image = rescale(image, (416, 416)).unsqueeze(0).to(device)
+            detections = yolo(image)
+            detections = non_max_suppression(detections, conf_thres=0.5, nms_thres=0.01)
+
+            # Bounding-box colors
+            cmap = plt.get_cmap("tab20b")
+            colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+
+            plt.figure()
+            fig, ax = plt.subplots(1)
+            ax.imshow(transforms.ToPILImage()(image.cpu().detach()[0]))
+
+            # Draw bounding boxes and labels of detections
+            if detections .__len__() != 0:
+                detections = torch.cat([d for d in detections])
+                # Rescale boxes to original image
+                detections = rescale_boxes(detections, 416, image.shape[2:])
+                unique_labels = detections[:, -1].cpu().unique()
+                n_cls_preds = len(unique_labels)
+                bbox_colors = random.sample(colors, n_cls_preds)
+                for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
+                    print("\t+ Label: %s, Conf: %.5f" % ('Hand', cls_conf.item()))
+
+                    box_w = x2 - x1
+                    box_h = y2 - y1
+
+                    color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+                    # Create a Rectangle patch
+                    bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
+                    # Add the bbox to the plot
+                    ax.add_patch(bbox)
+            plt.show()
+
             output = model(image)
             output1 = output[0].split(image.shape[0], dim=0)
             output2 = output[1].split(image.shape[0], dim=0)

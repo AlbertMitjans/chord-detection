@@ -114,6 +114,7 @@ class HourglassNet(nn.Module):
         self.layer2 = self._make_residual(block, self.inplanes, 1)
         self.layer3 = self._make_residual(block, self.num_feats, 1)
         self.maxpool = nn.MaxPool2d(2, stride=2)
+        self.conv2 = nn.Conv3d(3, 1, kernel_size=1)
 
         # build hourglass modules
         ch1 = self.num_feats*block.expansion
@@ -210,26 +211,23 @@ class HourglassNet(nn.Module):
         x = self.maxpool(x)
         x = self.layer2(x)
         x = self.layer3(x)
-        x1 = x
-        x2 = x
-        x3 = x
 
         for i in range(self.num_stacks):
-            y1 = self.hg1[i](x1)
+            y1 = self.hg1[i](x)
             y1 = self.res1[i](y1)
             y1 = self.fc1[i](y1)
             score1 = self.score1[i](y1)
             end_score1 = F.interpolate(score1, shape)
             out1.append(end_score1)
 
-            y2 = self.hg2[i](x2)
+            y2 = self.hg2[i](x)
             y2 = self.res2[i](y2)
             y2 = self.fc2[i](y2)
             score2 = self.score2[i](y2)
             end_score2 = F.interpolate(score2, shape)
             out2.append(end_score2)
 
-            y3 = self.hg3[i](x3)
+            y3 = self.hg3[i](x)
             y3 = self.res3[i](y3)
             y3 = self.fc3[i](y3)
             score3 = self.score3[i](y3)
@@ -239,13 +237,15 @@ class HourglassNet(nn.Module):
             if i < self.num_stacks-1:
                 fc_1 = self.fc_1[i](y1)
                 score_1 = self.score_1[i](score1)
-                x1 = x1 + fc_1 + score_1
+                x1 = x + fc_1 + score_1
                 fc_2 = self.fc_2[i](y2)
                 score_2 = self.score_2[i](score2)
-                x2 = x2 + fc_2 + score_2
+                x2 = x + fc_2 + score_2
                 fc_3 = self.fc_3[i](y3)
                 score_3 = self.score_3[i](score3)
-                x3 = x3 + fc_3 + score_3
+                x3 = x + fc_3 + score_3
+                x = torch.stack((x1, x2, x3), dim=1)
+                x = self.conv2(x)[:, 0]
 
         out1 = torch.cat(out1)
         out2 = torch.cat(out2)

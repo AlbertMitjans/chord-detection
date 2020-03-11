@@ -12,7 +12,7 @@ from utils.tb_visualizer import Logger
 
 def train(ckpt, num_epochs, batch_size, device):
     num_workers = 0
-    lr = 5e-4
+    lr = 8e-4
     momentum = 0
     weight_decay = 0
 

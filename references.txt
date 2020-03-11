@@ -1,3 +1,4 @@
 https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 Hand dataset: http://www.robots.ox.ac.uk/~vgg/data/hands/
 Hand dataset: http://vision.soic.indiana.edu/projects/egohands/
+Multi-task Hourglass: https://arxiv.org/pdf/1905.03003.pdf
