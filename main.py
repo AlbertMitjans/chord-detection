@@ -15,7 +15,7 @@ def main(train_flag, evaluate_val, save_imgs, ckpt, num_epochs, batch_size):
 
     elif not train_flag:
         num_workers = 0
-        directory = 'data/'
+        directory = 'data/my_data/'
 
         model, train_dataset, val_dataset, _, _ = init_model_and_dataset(directory, device)
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
                                                                     "for testing")
     parser.add_argument("--save_imgs", type=str2bool, default=True, help="if True, output imgs will be saved")
     parser.add_argument("--batch_size", type=int, default=1, help="size of each image batch")
-    parser.add_argument("--ckpt", type=str, default='checkpoints/hg_ckpt_10.pth', help="path to ckpt file")
+    parser.add_argument("--ckpt", type=str, default='checkpoints/best_ckpt/best.pth', help="path to ckpt file")
     parser.add_argument("--num_epochs", type=int, default=200, help="number of epochs")
 
     opt = parser.parse_args()

@@ -19,7 +19,7 @@ def natural_keys(text):
     return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
-for root, dirs, files in os.walk('C:\\Users\\biomlearn\\Desktop\\yolo\\data\\custom\\images'):
+for root, dirs, files in os.walk('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\images'):
     files.sort(key=natural_keys)
     for i, file in enumerate(files):
         x = np.random.random()
@@ -28,5 +28,5 @@ for root, dirs, files in os.walk('C:\\Users\\biomlearn\\Desktop\\yolo\\data\\cus
         if x > 0.8:
             val.append('data/custom/images/{file}'.format(file=file))
 
-np.savetxt('C:\\Users\\biomlearn\\Desktop\\yolo\\data\\custom\\train.txt', np.array(train), fmt='%s')
-np.savetxt('C:\\Users\\biomlearn\\Desktop\\yolo\\data\\custom\\valid.txt', np.array(val), fmt='%s')
+np.savetxt('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\train.txt', np.array(train), fmt='%s')
+np.savetxt('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\valid.txt', np.array(val), fmt='%s')

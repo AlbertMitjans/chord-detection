@@ -10,6 +10,23 @@ from skimage.feature import peak_local_max
 from pathlib import Path
 
 
+def rescale(image, size):
+    h, w = image.shape[-2:]
+    if isinstance(size, int):
+        if h > w:
+            new_h, new_w = size * h / w, size
+        else:
+            new_h, new_w = size, size * w / h
+    else:
+        new_h, new_w = size
+
+    new_h, new_w = int(new_h), int(new_w)
+    resize = transforms.Resize((new_h, new_w))
+    img = transforms.ToTensor()(resize(transforms.ToPILImage()(image)))
+
+    return img
+
+
 def compute_gradient(image):
     # we compute the gradient of the image
     '''kx = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])

@@ -2,8 +2,9 @@ import os
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data', 'images'))
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data/my_data', 'images'))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, default=directory, help="path of the directory where the images are")
@@ -11,7 +12,7 @@ parser.add_argument("--display_time", type=int, default=3, help="time of the dis
                                                                 "colored circles")
 opt = parser.parse_args()
 
-i = 211
+i = 0
 
 try:
     path = os.path.abspath(opt.path)
@@ -22,7 +23,7 @@ except AttributeError:
 
 while True:
     try:
-        img = plt.imread(os.path.join(opt.path, 'image{top1}.jpg'.format(top1=i)))
+        img = plt.imread(os.path.join(opt.path, 'image{top1}.JPG'.format(top1=i)))
     except FileNotFoundError:
         print('png image')
         try:
@@ -36,42 +37,43 @@ while True:
     fig.suptitle('Image {top1}'.format(top1=i))
     plt.imshow(img)
 
-    tip = []
-    knuckle1 = []
-    knuckle2 = []
-    notes = []
+    fingers = []
+    strings = []
+    frets = []
+    hands = []
 
     def onclick_1(event):
         ix, iy = event.xdata, event.ydata
         if ix is None and iy is None:
-            tip.append([-1, -1])
+            fingers.append([-1, -1])
         else:
-            tip.append([ix, iy])
+            fingers.append([ix, iy])
         ax.scatter(ix, iy, c='red')
+        plt.draw()
 
     def onclick_2(event):
         ix, iy = event.xdata, event.ydata
         if ix is None and iy is None:
-            knuckle1.append([-1, -1])
+            strings.append([-1, -1])
         else:
-            knuckle1.append([ix, iy])
+            strings.append([ix, iy])
         ax.scatter(ix, iy, c='blue')
+        plt.draw()
 
     def onclick_3(event):
         ix, iy = event.xdata, event.ydata
         if ix is None and iy is None:
-            knuckle2.append([-1, -1])
+            frets.append([-1, -1])
         else:
-            knuckle2.append([ix, iy])
+            frets.append([ix, iy])
         ax.scatter(ix, iy, c='green')
+        plt.draw()
 
     def onclick_5(event):
         ix, iy = event.xdata, event.ydata
-        if ix is None and iy is None:
-            notes.append([-1, -1])
-        else:
-            notes.append([ix, iy])
+        hands.append([ix, iy])
         ax.scatter(ix, iy, c='purple')
+        plt.draw()
 
     '''def onclick_2(event):
         ix, iy = event.xdata, event.ydata
@@ -82,25 +84,33 @@ while True:
         else:
             nails.append([ix, iy])'''
 
+
+    for a in range(2):
+        o5 = fig.canvas.mpl_connect('button_press_event', onclick_5)
+        plt.waitforbuttonpress()
+        fig.canvas.mpl_disconnect(o5)
+        plt.draw()
+
+    '''im = img[int(hands[0][1]):int(hands[1][1]), int(hands[0][0]):int(hands[1][0])]
+
+    fig, ax = plt.subplots(figsize=(80, 80))
+    fig.suptitle('Image {top1}'.format(top1=i))
+    plt.imshow(im)
+
     for a in range(4):
         o1 = fig.canvas.mpl_connect('button_press_event', onclick_1)
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o1)
 
-    for a in range(4):
+    for a in range(6):
         o2 = fig.canvas.mpl_connect('button_press_event', onclick_2)
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o2)
 
-    for a in range(4):
+    for a in range(8):
         o3 = fig.canvas.mpl_connect('button_press_event', onclick_3)
         plt.waitforbuttonpress()
-        fig.canvas.mpl_disconnect(o3)
-
-    for a in range(4):
-        o5 = fig.canvas.mpl_connect('button_press_event', onclick_5)
-        plt.waitforbuttonpress()
-        fig.canvas.mpl_disconnect(o5)
+        fig.canvas.mpl_disconnect(o3)'''
 
     '''stop = {'stop': False}
 
@@ -113,12 +123,12 @@ while True:
 
     plt.close('all')
 
-    np.savetxt(os.path.join(directory, 'image{top1}_tip.csv'.format(top1=i)), np.asarray(tip), delimiter=',', fmt='%.3f')
-    np.savetxt(os.path.join(directory, 'image{top1}_knuckle1.csv'.format(top1=i)), np.asarray(knuckle1), delimiter=',',
+    '''np.savetxt(os.path.join(directory, 'image{top1}_fingers.csv'.format(top1=i)), np.asarray(fingers), delimiter=',', fmt='%.3f')
+    np.savetxt(os.path.join(directory, 'image{top1}_strings.csv'.format(top1=i)), np.asarray(strings), delimiter=',',
                 fmt='%.3f')
-    np.savetxt(os.path.join(directory, 'image{top1}_knuckle2.csv'.format(top1=i)), np.asarray(knuckle2), delimiter=',',
-                fmt='%.3f')
-    np.savetxt(os.path.join(directory, 'image{top1}_notes.csv'.format(top1=i)), np.asarray(notes), delimiter=',',
+    np.savetxt(os.path.join(directory, 'image{top1}_frets.csv'.format(top1=i)), np.asarray(frets), delimiter=',',
+                fmt='%.3f')'''
+    np.savetxt(os.path.join(directory, 'image{top1}_hand.csv'.format(top1=i)), np.asarray(hands), delimiter=',',
                fmt='%.3f')
 
     i += 1
