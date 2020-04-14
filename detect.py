@@ -217,13 +217,18 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax):
             if x < 0:
                 if i == 0:
                     s = 1
+                elif i == 5:
+                    s = 5
                 elif np.abs(x) <= string[i-1]/2:
                     s = i + 1
                 elif np.abs(x) > string[i-1]/2:
                     s = i
                 break
             elif x == 0:
-                s = i + 1
+                if i == 5:
+                    s = 5
+                else:
+                    s = i + 1
                 break
             else:
                 s = 6
@@ -242,12 +247,28 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax):
             else:
                 f = i - 1
 
-        tab[f][-s] = idx + 1
+        tab[np.clip(f, a_max=None, a_min=0)][-s] = idx + 1
 
-    if np.where(tab==1)[1] == 0:
-        for i in range(6):
-            if np.max(tab[:, i]) == 0:
-                tab[np.where(tab==1)[0][0]][i] = 1
+    pos_first_finger = np.where(tab==1)
+
+    if pos_first_finger[1] == 0:
+
+        # we delete the value if we have another finger in the same fret (because it means we detected the thumb)
+
+        fingers = fingers[fingers[:, 0].argsort()]
+        fingers_x_sorted = fingers[fingers[:, 1].argsort()]
+
+        if fingers[0, 1] == np.max(fingers[:, 1]) and fingers[0, 1] - fingers_x_sorted[-2, 1] <= 18:
+            tab[pos_first_finger] = 0
+            tab = np.clip(tab - 1, a_min=0, a_max=None)
+
+        # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
+        # that fret to 1
+
+        elif np.max(tab[pos_first_finger[0]]) == 1:
+            for i in range(6):
+                if np.max(tab[:, i]) == 0:
+                    tab[pos_first_finger[0][0]][i] = 1
 
     tab = tab[:np.max(np.where(tab != 0)[0]) + 2]
 
@@ -257,7 +278,7 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax):
 def load_tabs():
     tabs = {}
 
-    chord_dict = pd.read_excel(os.path.join(os.getcwd(), 'data', 'guitar_chords.xlsx'))
+    chord_dict = pd.read_excel(os.path.join(os.getcwd(), 'data/', 'tabs.xlsx'))
 
     for i in range(chord_dict.shape[0]):
         try:
@@ -283,7 +304,7 @@ def detect_chord(image, yolo, model, device):
     cmap = plt.get_cmap("tab20b")
     colors = [cmap(i) for i in np.linspace(0, 1, 20)]
 
-    plt.figure()
+    '''plt.figure()
     fig, ax = plt.subplots(1)
     ax.imshow(transforms.ToPILImage()(img))
     ax.axis('off')
@@ -307,12 +328,11 @@ def detect_chord(image, yolo, model, device):
             bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
             # Add the bbox to the plot
             ax.add_patch(bbox)
-    plt.savefig('full_image.png')
-    plt.show()
+    plt.show()'''
 
     if detections[0] is not None:
 
-        #detections = torch.cat([d for d in detections])
+        detections = torch.cat([d for d in detections])
 
         if detections.shape[0] > 1:
             if detections[0][0] > detections[1][0]:
@@ -326,26 +346,35 @@ def detect_chord(image, yolo, model, device):
         img = img[:, detect[1].item():detect[3].item(), detect[0].item():detect[2].item()]
         img = rescale(img, (300, 300))
 
-        plt.figure()
+        '''plt.figure()
         plt.imshow(transforms.ToPILImage()(img))
         plt.axis('off')
-        plt.savefig('hand.png')
-        plt.show()
+        plt.show()'''
 
         img = img.unsqueeze(0).to(device)
 
         output = model(img)
-        output1 = output[0].split(image.shape[0], dim=0)
-        output2 = output[1].split(image.shape[0], dim=0)
-        output3 = output[2].split(image.shape[0], dim=0)
+        output1 = output[0].split(image.shape[0], dim=0)  # fingers
+        output2 = output[1].split(image.shape[0], dim=0)  # frets
+        output3 = output[2].split(image.shape[0], dim=0)  # strings
 
-        max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.6)
+        max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.5)
         max1 = max1[max1[:, 0].argsort()]
+
+        # we delete the detected thumb
+
         if max1.shape[0] > 1:
-            if max1[1][0] - max1[0][0] >= 70:  # We delete the thumb
+            if max1[1, 0] - max1[0, 0] >= 70:
                 max1 = max1[1:]
+
         max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
+
+        # if we only detected one fret, we lower the threshold
+
+        if max2.shape[0] == 1:
+            max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
         max2 = max2[(-max2)[:, 1].argsort()]
+
         max3 = local_max(output3[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.4)
         max3 = max3[(-max3)[:, 0].argsort()]
 
@@ -366,16 +395,11 @@ def detect_chord(image, yolo, model, device):
 
         tab = make_tab(max1, frets, strings, v_frets, v_strings, ax[1][1])
 
-        plt.savefig('detections.png')
-
-        plt.show()
+        #plt.show()
 
         target_tab = load_tabs()
 
         chord_conf = {}
-
-        tab[np.where(tab==3.0)] = 0
-        tab[2, 0] = 3
 
         for chord in target_tab:
             chord_tab = target_tab[chord]
@@ -390,6 +414,7 @@ def detect_chord(image, yolo, model, device):
 
             # Penalty for difference in number of fingers
             points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 5
+            points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 5
 
             for (a, b) in loc:
                 tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
@@ -398,7 +423,7 @@ def detect_chord(image, yolo, model, device):
                 elif tabs[a, min(b + 1, 5)] != 0 or tabs[a, max(b - 1, 0)] != 0:
                     points += 0.3 / loc.shape[0]
                 else:
-                    points -= 1 / loc.shape[0]  # Penalty for not having this finger position
+                    points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
 
                 '''elif tabs[min(a + 1, tabs.shape[0]-1), b] != 0 or tabs[max(a - 1, 0), b] != 0:
                     points += 0.01/loc.shape[0]'''
@@ -438,15 +463,15 @@ def load_models():
 if __name__ == "__main__":
     yolo, model, device = load_models()
 
-    target_chords = pd.read_excel(os.path.join(os.getcwd(), 'data/my_data', 'targets.xlsx'), header=None).values.tolist()
+    target_chords = pd.read_excel(os.path.join(os.getcwd(), 'data/', '1_chords.xlsx'), header=None).values.tolist()
 
     precision = AverageMeter()
 
-    directory = 'data/my_data/images'
+    directory = 'data/1'
 
     for root, dirs, files in os.walk(directory):
         for i, file in enumerate(files):
-            if file.endswith('.JPG') and not file.startswith('00'):
+            if file.endswith('.jpg'):
                 image = Image.open(os.path.join(root, file))
 
                 final_chord, tab, chord_conf = detect_chord(image, yolo, model, device=device)
@@ -459,7 +484,8 @@ if __name__ == "__main__":
 
                 precision.update(score)
 
-                if target_chord != final_chord:
+                if score == 0:
+
                     print(tab)
 
                     print(
@@ -467,11 +493,11 @@ if __name__ == "__main__":
                                                                                               chord2=final_chord,
                                                                                               perc=chord_conf[final_chord][
                                                                                                   0]))
+                    print(precision.avg)
 
                     plt.show()
 
                     print('---------------------------------------------------------------')
 
                 plt.close('all')
-                print(precision.avg)
 

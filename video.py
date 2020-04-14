@@ -23,7 +23,7 @@ writer = animation.FFMpegWriter(fps=5)
 directory = os.getcwd()
 
 vid = cv2.VideoCapture()
-vid.open(os.path.join(directory, 'data/video_2.mp4'))
+vid.open(os.path.join(directory, 'data/video.mp4'))
 
 ret, frame = vid.read()
 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
