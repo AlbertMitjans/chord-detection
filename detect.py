@@ -32,154 +32,164 @@ def fill_values(frets, strings):
             v1_all.append(vector)
             d1_all.append(distance)
 
-        v1_allmin = v1_all[np.argmin(d1_all)]
+        if v1_all.__len__() == 0:
+            v1_mean = None
+            v2_mean = None
 
-        # We eliminate more string bad values
+        elif v1_all.__len__() > 0:
+            v1_allmin = v1_all[np.argmin(d1_all)]
 
-        d1 = []
-        strings_2 = []
+            # We eliminate more string bad values
 
-        for i, val in enumerate(v1_all):
-            if np.abs(np.dot(val, v1_allmin))/np.linalg.norm(val)/np.linalg.norm(v1_allmin) >= 0.8:
-                d1.append(d1_all[i])
-                if strings_2.__len__() == 0:
-                    strings_2.append(strings[i])
-                strings_2.append(strings[i + 1])
+            d1 = []
+            strings_2 = []
 
-        strings = np.array(strings_2)
+            for i, val in enumerate(v1_all):
+                if np.abs(np.dot(val, v1_allmin))/np.linalg.norm(val)/np.linalg.norm(v1_allmin) >= 0.8:
+                    d1.append(d1_all[i])
+                    if strings_2.__len__() == 0:
+                        strings_2.append(strings[i])
+                    strings_2.append(strings[i + 1])
 
-        # We fill the empty values between two detected strings
+            strings = np.array(strings_2)
 
-        for idx, dist in enumerate(d1):
-            if dist > np.min(d1)*2.8 and strings.shape[0] < 6:
-                vector = strings[idx + 1] - strings[idx]
-                strings = np.append(strings, [strings[idx] + vector / 3], axis=0)
-                strings = np.append(strings, [strings[idx] + 2 * vector / 3], axis=0)
+            # We fill the empty values between two detected strings
 
-            elif dist > np.min(d1)*1.8 and strings.shape[0] < 6:
-                vector = strings[idx + 1] - strings[idx]
-                strings = np.append(strings, [strings[idx] + vector/2], axis=0)
+            for idx, dist in enumerate(d1):
+                if dist > np.min(d1)*2.8 and strings.shape[0] < 6:
+                    vector = strings[idx + 1] - strings[idx]
+                    strings = np.append(strings, [strings[idx] + vector / 3], axis=0)
+                    strings = np.append(strings, [strings[idx] + 2 * vector / 3], axis=0)
 
-        strings = strings[(-strings)[:, 0].argsort()]
+                elif dist > np.min(d1)*1.8 and strings.shape[0] < 6:
+                    vector = strings[idx + 1] - strings[idx]
+                    strings = np.append(strings, [strings[idx] + vector/2], axis=0)
 
-        # We compute the mean of the vectors of the strings
+            strings = strings[(-strings)[:, 0].argsort()]
 
-        v1_all = []
-        d1_all = []
-        for i in range(strings.shape[0] - 1):
-            vector = strings[i + 1] - strings[i]
-            distance = (vector[1] ** 2 + vector[0] ** 2) ** (1 / 2)
-            v1_all.append(vector)
-            d1_all.append(distance)
+            # We compute the mean of the vectors of the strings
 
-        v1_mean = np.mean(v1_all, axis=0)
+            v1_all = []
+            d1_all = []
+            for i in range(strings.shape[0] - 1):
+                vector = strings[i + 1] - strings[i]
+                distance = (vector[1] ** 2 + vector[0] ** 2) ** (1 / 2)
+                v1_all.append(vector)
+                d1_all.append(distance)
 
-        # We eliminate bad values of frets
-        frets_all = frets
-        frets = []
+            v1_mean = np.mean(v1_all, axis=0)
 
-        for val in frets_all:
-            if val[1] < np.min(strings, axis=0)[1]:
-                frets.append(val)
+            # We eliminate bad values of frets
+            frets_all = frets
+            frets = []
 
-        frets = np.array(frets)
+            for val in frets_all:
+                if val[1] < np.min(strings, axis=0)[1]:
+                    frets.append(val)
 
-        # We compute the vectors of the frets
+            frets = np.array(frets)
 
-        v2_all = []
-        d2_all = []
-        for i in range(frets.shape[0] - 1):
-            vector = frets[i+1] - frets[i]
-            if np.abs(vector[0]) > np.abs(vector[1]):
-                vector = [999, 999]
-            distance = (vector[1]**2 + vector[0]**2)**(1/2)
-            v2_all.append(vector)
-            d2_all.append(distance)
+            # We compute the vectors of the frets
 
-        v2_allmin = v2_all[np.argmin(d2_all)]
+            v2_all = []
+            d2_all = []
+            for i in range(frets.shape[0] - 1):
+                vector = frets[i+1] - frets[i]
+                if np.abs(vector[0]) > np.abs(vector[1]):
+                    vector = [999, 999]
+                distance = (vector[1]**2 + vector[0]**2)**(1/2)
+                v2_all.append(vector)
+                d2_all.append(distance)
 
-        # We eliminate more bad values of frets
+            if v2_all.__len__() == 0:
+                v1_mean = None
+                v2_mean = None
 
-        frets_all = frets
-        d2 = []
-        frets = []
+            elif v2_all.__len__() > 0:
+                v2_allmin = v2_all[np.argmin(d2_all)]
 
-        for i, val in enumerate(v2_all):
-            if np.abs(np.dot(val, v2_allmin))/np.linalg.norm(val)/np.linalg.norm(v2_allmin) >= 0.9:
-                d2.append(d2_all[i]*(1 + i/10))
-                if frets.__len__() == 0:
-                    frets.append(frets_all[i])
-                frets.append(frets_all[i + 1])
+                # We eliminate more bad values of frets
 
-        frets = np.array(frets)
+                frets_all = frets
+                d2 = []
+                frets = []
 
-        # We fill the empty values between two detected frets
+                for i, val in enumerate(v2_all):
+                    if np.abs(np.dot(val, v2_allmin))/np.linalg.norm(val)/np.linalg.norm(v2_allmin) >= 0.9:
+                        d2.append(d2_all[i]*(1 + i/10))
+                        if frets.__len__() == 0:
+                            frets.append(frets_all[i])
+                        frets.append(frets_all[i + 1])
 
-        for idx, dist in enumerate(d2):
-            if dist >= 2.55*np.min(d2):
-                vector = frets[idx + 1] - frets[idx]
-                frets = np.append(frets, [frets[idx] + vector / 3], axis=0)
-                frets = np.append(frets, [frets[idx] + 2 * vector / 3], axis=0)
-            elif dist >= 1.5*np.min(d2):
-                vector = frets[idx + 1] - frets[idx]
-                frets = np.append(frets, [frets[idx] + vector/2], axis=0)
+                frets = np.array(frets)
 
-        frets = frets[(-frets)[:, 1].argsort()]
+                # We fill the empty values between two detected frets
 
-        # We compute the mean of the vectors of the frets
+                for idx, dist in enumerate(d2):
+                    if dist >= 2.55*np.min(d2):
+                        vector = frets[idx + 1] - frets[idx]
+                        frets = np.append(frets, [frets[idx] + vector / 3], axis=0)
+                        frets = np.append(frets, [frets[idx] + 2 * vector / 3], axis=0)
+                    elif dist >= 1.5*np.min(d2):
+                        vector = frets[idx + 1] - frets[idx]
+                        frets = np.append(frets, [frets[idx] + vector/2], axis=0)
 
-        v2_all = []
-        d2_all = []
-        for i in range(frets.shape[0] - 1):
-            vector = frets[i + 1] - frets[i]
-            distance = (vector[1] ** 2 + vector[0] ** 2) ** (1 / 2)
-            v2_all.append(vector)
-            d2_all.append(distance)
+                frets = frets[(-frets)[:, 1].argsort()]
 
-        v2_mean = np.mean(v2_all, axis=0)
+                # We compute the mean of the vectors of the frets
 
-        # We fill the missing highest fret values
+                v2_all = []
+                d2_all = []
+                for i in range(frets.shape[0] - 1):
+                    vector = frets[i + 1] - frets[i]
+                    distance = (vector[1] ** 2 + vector[0] ** 2) ** (1 / 2)
+                    v2_all.append(vector)
+                    d2_all.append(distance)
 
-        last_fret = frets[-1]
-        i = 0
-        while (0 < last_fret[0] < 300 and 0 < last_fret[1] < 300):
-            last_fret = last_fret + (v2_all[-1]*(1 - i/10))
-            if 0 < last_fret[0] < 300 and 0 < last_fret[1] < 300:
-                frets = np.append(frets, [last_fret], axis=0)
-                i += 1
+                v2_mean = np.mean(v2_all, axis=0)
 
-        # We fill the empty values of the frets w.r.t. the strings
+                # We fill the missing highest fret values
 
-        first_fret = frets[0]
-        last_string = strings[-1]
-        i = 0
-        while np.abs(np.dot(last_string - first_fret, v2_mean)) > (np.linalg.norm(v2_mean)**2)*0.8 and frets.shape[0] < 10:
-            first_fret = first_fret - (v2_all[0]*(1 + i/10))
-            frets = np.append(frets, [first_fret], axis=0)
-            i += 1
+                last_fret = frets[-1]
+                i = 0
+                while (0 < last_fret[0] < 300 and 0 < last_fret[1] < 300):
+                    last_fret = last_fret + (v2_all[-1]*(1 - i/10))
+                    if 0 < last_fret[0] < 300 and 0 < last_fret[1] < 300:
+                        frets = np.append(frets, [last_fret], axis=0)
+                        i += 1
 
-        # We fill the empty values of the strings w.r.t. the frets
+                # We fill the empty values of the frets w.r.t. the strings
 
-        while np.abs(np.dot(first_fret - last_string, v1_mean)) > (np.linalg.norm(v1_mean)**2)*0.7 and strings.shape[0] < 6:
-            last_string = last_string + v1_mean
-            strings = np.append(strings, [last_string], axis=0)
+                first_fret = frets[0]
+                last_string = strings[-1]
+                i = 0
+                while np.abs(np.dot(last_string - first_fret, v2_mean)) > (np.linalg.norm(v2_mean)**2)*0.8 and frets.shape[0] < 10:
+                    first_fret = first_fret - (v2_all[0]*(1 + i/10))
+                    frets = np.append(frets, [first_fret], axis=0)
+                    i += 1
 
-        # We fill the remaining values of the strings
+                # We fill the empty values of the strings w.r.t. the frets
 
-        first_string = strings[0]
-        while strings.shape[0] < 6 and (first_string[0] < 300 and first_string[1] < 300):
-            first_string = first_string - v1_mean
-            if first_string[0] < 300 and first_string[1] < 300:
-                strings = np.append(strings, [first_string], axis=0)
+                while np.abs(np.dot(first_fret - last_string, v1_mean)) > (np.linalg.norm(v1_mean)**2)*0.7 and strings.shape[0] < 6:
+                    last_string = last_string + v1_mean
+                    strings = np.append(strings, [last_string], axis=0)
+
+                # We fill the remaining values of the strings
+
+                first_string = strings[0]
+                while strings.shape[0] < 6 and (first_string[0] < 300 and first_string[1] < 300):
+                    first_string = first_string - v1_mean
+                    if first_string[0] < 300 and first_string[1] < 300:
+                        strings = np.append(strings, [first_string], axis=0)
 
     else:
-        v1_mean = [-10, 0]
-        v2_mean = [0, -20]
+        v1_mean = None
+        v2_mean = None
 
     return frets, strings, v1_mean, v2_mean
 
 
-def make_tab(fingers, frets, strings, v_frets, v_strings, ax):
+def make_tab(fingers, frets, strings, v_frets, v_strings): #, ax):
     tab = np.zeros((15, 6))
 
     frets = frets[(-frets)[:, 1].argsort()]
@@ -208,8 +218,8 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax):
         point1 = (seg_intersect(frets[0], frets[-1], finger, finger + v_strings))
         point2 = (seg_intersect(strings[0], strings[-1], finger, finger + v_frets))
 
-        ax.scatter(point1[1], point1[0], c='r', s=3)
-        ax.scatter(point2[1], point2[0], c='r', s=3)
+        #ax.scatter(point1[1], point1[0], c='r', s=3)
+        #ax.scatter(point2[1], point2[0], c='r', s=3)
 
         string = strings[:, 0] - point2[0]
 
@@ -257,10 +267,10 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax):
 
         fingers = fingers[fingers[:, 0].argsort()]
         fingers_x_sorted = fingers[fingers[:, 1].argsort()]
-
-        if fingers[0, 1] == np.max(fingers[:, 1]) and fingers[0, 1] - fingers_x_sorted[-2, 1] <= 18:
-            tab[pos_first_finger] = 0
-            tab = np.clip(tab - 1, a_min=0, a_max=None)
+        if fingers_x_sorted.shape[0] > 1:
+            if fingers[0, 1] == np.max(fingers[:, 1]) and fingers[0, 1] - fingers_x_sorted[-2, 1] <= 18:
+                tab[pos_first_finger] = 0
+                tab = np.clip(tab - 1, a_min=0, a_max=None)
 
         # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
         # that fret to 1
@@ -300,11 +310,11 @@ def detect_chord(image, yolo, model, device):
 
     img = image.cpu().detach()[0]
 
-    # Bounding-box colors
+    '''# Bounding-box colors
     cmap = plt.get_cmap("tab20b")
     colors = [cmap(i) for i in np.linspace(0, 1, 20)]
 
-    '''plt.figure()
+    plt.figure()
     fig, ax = plt.subplots(1)
     ax.imshow(transforms.ToPILImage()(img))
     ax.axis('off')
@@ -333,30 +343,38 @@ def detect_chord(image, yolo, model, device):
     if detections[0] is not None:
 
         detections = torch.cat([d for d in detections])
+        detections = detections[detections[:, 0].argsort()]
 
-        if detections.shape[0] > 1:
-            if detections[0][0] > detections[1][0]:
-                detect = detections[0][:4] + torch.Tensor([-10, -40, +40, 0])
-            else:
-                detect = detections[1][:4] + torch.Tensor([-10, -40, +40, 0])
+        if (detections[:, 1] <= 150).sum().item() > 0:
+            delete = np.where(detections[:, 1] <= 150)[0][0]
+            detections = torch.cat([detections[0:delete], detections[delete+1:]])
+        if (detections[:, 1] >= 300).sum().item() > 0:
+            delete = np.where(detections[:, 1] <= 300)[0][0]
+            detections = torch.cat([detections[0:delete], detections[delete + 1:]])
+
+        if detections.shape[0] == 3:
+            detect = detections[-2][:4] + torch.Tensor([-10, -40, +40, 0])
         else:
-            detect = detections[0][:4] + torch.Tensor([-10, -40, +40, 0])
+            detect = detections[-1][:4] + torch.Tensor([-10, -40, +40, 0])
+
         detect = detect.type(torch.int)
 
-        img = img[:, detect[1].item():detect[3].item(), detect[0].item():detect[2].item()]
-        img = rescale(img, (300, 300))
+        cropped_img = img[:, detect[1].item():detect[3].item(), detect[0].item():detect[2].item()]
+        cropped_img = rescale(cropped_img, (300, 300))
 
         '''plt.figure()
-        plt.imshow(transforms.ToPILImage()(img))
+        plt.imshow(transforms.ToPILImage()(cropped_img))
         plt.axis('off')
         plt.show()'''
 
-        img = img.unsqueeze(0).to(device)
+        img = cropped_img.unsqueeze(0).to(device)
 
         output = model(img)
         output1 = output[0].split(image.shape[0], dim=0)  # fingers
         output2 = output[1].split(image.shape[0], dim=0)  # frets
         output3 = output[2].split(image.shape[0], dim=0)  # strings
+
+        output_img = output1[-1][0][0] + output2[-1][0][0] + output3[-1][0][0]
 
         max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.5)
         max1 = max1[max1[:, 0].argsort()]
@@ -380,7 +398,7 @@ def detect_chord(image, yolo, model, device):
 
         frets, strings, v_strings, v_frets = fill_values(max2, max3)
 
-        fig, ax = plt.subplots(2, 2)
+        '''fig, ax = plt.subplots(2, 2)
         ax[1][1].imshow(transforms.ToPILImage()(img[0].cpu().detach()))
         ax[1][1].scatter(max1[:, 1], max1[:, 0], s=3)
         ax[1][1].scatter(frets[:, 1], frets[:, 0], s=3)
@@ -391,53 +409,61 @@ def detect_chord(image, yolo, model, device):
         ax[0][0].axis('off')
         ax[0][1].axis('off')
         ax[1][0].axis('off')
-        ax[1][1].axis('off')
+        ax[1][1].axis('off')'''
 
-        tab = make_tab(max1, frets, strings, v_frets, v_strings, ax[1][1])
+        if v_frets is None and v_strings is None:
+            final_chord = None
+            tab = None
+            chord_conf = None
 
-        #plt.show()
+        else:
+            tab = make_tab(max1, frets, strings, v_frets, v_strings) #, ax[1][1])
 
-        target_tab = load_tabs()
+            #plt.show()
 
-        chord_conf = {}
+            target_tab = load_tabs()
 
-        for chord in target_tab:
-            chord_tab = target_tab[chord]
-            tabs = np.zeros((np.max(chord_tab) + 1, 6))
-            for i, fret in enumerate(chord_tab):
-                if fret != 0:
-                    tabs[fret - 1][i] = 1
+            chord_conf = {}
 
-            loc = np.transpose(np.where(tab != 0))
+            for chord in target_tab:
+                chord_tab = target_tab[chord]
+                tabs = np.zeros((np.max(chord_tab) + 1, 6))
+                for i, fret in enumerate(chord_tab):
+                    if fret != 0:
+                        tabs[fret - 1][i] = 1
 
-            points = 0.
+                loc = np.transpose(np.where(tab != 0))
 
-            # Penalty for difference in number of fingers
-            points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 5
-            points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 5
+                points = 0.
 
-            for (a, b) in loc:
-                tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
-                if tabs[a, b] != 0:
-                    points += 1 / loc.shape[0]
-                elif tabs[a, min(b + 1, 5)] != 0 or tabs[a, max(b - 1, 0)] != 0:
-                    points += 0.3 / loc.shape[0]
-                else:
-                    points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
+                # Penalty for difference in number of fingers
+                points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 5
+                points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 5
 
-                '''elif tabs[min(a + 1, tabs.shape[0]-1), b] != 0 or tabs[max(a - 1, 0), b] != 0:
-                    points += 0.01/loc.shape[0]'''
+                for (a, b) in loc:
+                    tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
+                    if tabs[a, b] != 0:
+                        points += 1 / loc.shape[0]
+                    elif tabs[a, min(b + 1, 5)] != 0 or tabs[a, max(b - 1, 0)] != 0:
+                        points += 0.3 / loc.shape[0]
+                    else:
+                        points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
 
-            chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
+                    '''elif tabs[min(a + 1, tabs.shape[0]-1), b] != 0 or tabs[max(a - 1, 0), b] != 0:
+                        points += 0.01/loc.shape[0]'''
 
-        final_chord = max(chord_conf, key=chord_conf.get)
+                chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
+
+            final_chord = max(chord_conf, key=chord_conf.get)
 
     elif detections[0] is None:
         final_chord = None
         tab = None
         chord_conf = None
+        cropped_img = torch.zeros((3, 300, 300))
+        output_img = torch.zeros((300, 300))
 
-    return final_chord, tab, chord_conf
+    return final_chord, tab, chord_conf, cropped_img, output_img
 
 
 def load_models():
@@ -453,7 +479,7 @@ def load_models():
     model = nn.DataParallel(model)
     model.to(device)
 
-    checkpoint = torch.load('checkpoints/best_ckpt/best.pth')
+    checkpoint = torch.load('checkpoints/best_ckpt/hourglass.pth')
 
     model.load_state_dict(checkpoint['model_state_dict'])
 
