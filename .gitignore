@@ -1,11 +1,15 @@
 checkpoints/best_ckpt/
 checkpoints/hg_s2_b1/
-data/guitar_chords.xlsx
-data/images
-data/images_2
-data/targets.csv
-data/train_dataset
-data/val_dataset
+data/0
+data/1
+data/README.txt
+data/labels.xlsx
+data/tabs.xlsx
+data/train.txt
+data/val.txt
+data/video.mp4
+main_video.avi
+tfg.mp4
 loss/__pycache__/
 __pycache__/
 .idea/
@@ -13,3 +17,4 @@ models/__pycache__/
 output/
 transforms/__pycache__/
 utils/__pycache__/
+Tests/

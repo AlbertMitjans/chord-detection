@@ -16,7 +16,7 @@ def train(ckpt, num_epochs, batch_size, device):
     momentum = 0
     weight_decay = 0
 
-    directory = 'data/my_data/'
+    directory = 'data/'
     start_epoch = 0
     start_loss = 0
     print_freq = 20

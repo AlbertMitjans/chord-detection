@@ -54,11 +54,11 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0):
     criterion = JointsMSELoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    checkpoint = torch.load("checkpoints/best_ckpt/multi-task.pth", map_location=device)
+    checkpoint = torch.load("checkpoints/best_ckpt/pretrained.pth", map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-    end_file = '.JPG'
+    end_file = '.jpg'
 
     cudnn.benchmark = True
 
@@ -66,9 +66,9 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0):
     horizontal_flip = HorizontalFlip()
     rescale = Rescale((300, 300))
 
-    train_dataset = CornersDataset(root_dir=directory + 'train_dataset', end_file=end_file,
+    train_dataset = CornersDataset(root_dir=directory + 'train.txt', end_file=end_file,
                                    transform=transforms.Compose([rescale]))
-    val_dataset = CornersDataset(root_dir=directory + 'val_dataset', end_file=end_file,
+    val_dataset = CornersDataset(root_dir=directory + 'val.txt', end_file=end_file,
                                  transform=transforms.Compose([rescale]))
 
     return model, train_dataset, val_dataset, criterion, optimizer

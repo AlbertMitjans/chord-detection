@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import scipy.stats as st
-import re
 
 from PIL import Image, ImageFilter
 from transforms.pad_to_square import pad_to_square
@@ -15,7 +14,7 @@ from transforms.pad_to_square import pad_to_square
 
 class CornersDataset(Dataset):
     def __init__(self, root_dir, end_file, target_shape=(8, 12, 12), transform=None):
-        self.img_names = []
+        self.img_path = []
         self.fingers = []
         self.hand = []
         self.frets = []
@@ -30,44 +29,48 @@ class CornersDataset(Dataset):
         self.read_csv()
 
     def read_csv(self):
+        files = open(self.root_dir).read().splitlines()
         print('Downloading dataset')
-        for root, dirs, files in os.walk(self.root_dir):
-            files.sort(key=natural_keys)
-            for file in files:
-                if file.endswith(self.end_file) or file.endswith('.jpg'):
-                    self.img_names.append(file)
-                if file.endswith("_frets.csv"):
-                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
-                    self.frets.append(f)
-                if file.endswith("_strings.csv"):
-                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
-                    self.strings.append(f)
-                if file.endswith("_fingers.csv"):
-                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
-                    self.fingers.append(f)
-                if file.endswith("_hand.csv"):
-                    f = pd.read_csv(os.path.join(self.root_dir, file), header=None).values
-                    self.hand.append(f)
+        for file in files:
+            if file.endswith(self.end_file):
+                self.img_path.append(file)
+            elif file.endswith("_frets.csv"):
+                f = pd.read_csv(file, header=None).values
+                self.frets.append(f)
+            elif file.endswith("_strings.csv"):
+                f = pd.read_csv(file, header=None).values
+                self.strings.append(f)
+            elif file.endswith("_fingers.csv"):
+                f = pd.read_csv(file, header=None).values
+                self.fingers.append(f)
+            elif file.endswith("_hand.csv"):
+                f = pd.read_csv(file, header=None).values
+                self.hand.append(f)
+            if os.path.basename(os.path.dirname(file)) == '0' and file.endswith(self.end_file):
+                self.hand.append([[0, 0], [0, 0]])
 
     def evaluate(self):
         self.validation = True
 
     def __len__(self):
-        return len(self.img_names)
+        return len(self.img_path)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_name = os.path.join(self.root_dir,
-                                self.img_names[idx])
+        img_path = self.img_path[idx]
 
-        img_number = os.path.basename(img_name)[:-4]
+        img_folder = os.path.basename(os.path.dirname(img_path))
 
-        image = Image.open(img_name)
+        img_name = os.path.basename(img_path)[:-4]
+
+        img_number = os.path.basename(img_name)[7:]
+
+        image = Image.open(img_path)
         image = transforms.ToTensor()(image).type(torch.float32)[:3]
 
-        if not img_number.startswith('00'):
+        if img_folder == '1':
             hand_coord = np.array(self.hand[idx])
             image = image[:, int(hand_coord[0][1]):int(hand_coord[1][1]), int(hand_coord[0][0]):int(hand_coord[1][0])]
 
@@ -103,16 +106,17 @@ class CornersDataset(Dataset):
         sample['frets'] = pad_to_square(sample['frets'])
         sample['strings'] = pad_to_square(sample['strings'])
 
-        '''fig, ax = plt.subplots(2, 2)
-        ax[0][0].axis('off')
-        ax[0][1].axis('off')
-        ax[1][0].axis('off')
-        ax[1][1].axis('off')
-        ax[0][0].imshow(transforms.ToPILImage()(sample['target']), cmap='gray')
-        ax[0][1].imshow(transforms.ToPILImage()(sample['frets']), cmap='gray')
-        ax[1][0].imshow(transforms.ToPILImage()(sample['strings']), cmap='gray')
-        ax[1][1].imshow(transforms.ToPILImage()(sample['image']))
-        plt.show()'''
+        '''if img_folder.startswith('1'):
+            fig, ax = plt.subplots(2, 2)
+            ax[0][0].axis('off')
+            ax[0][1].axis('off')
+            ax[1][0].axis('off')
+            ax[1][1].axis('off')
+            ax[0][0].imshow(transforms.ToPILImage()(sample['target']), cmap='gray')
+            ax[0][1].imshow(transforms.ToPILImage()(sample['frets']), cmap='gray')
+            ax[1][0].imshow(transforms.ToPILImage()(sample['strings']), cmap='gray')
+            ax[1][1].imshow(transforms.ToPILImage()(sample['image']))
+            plt.show()'''
 
         return sample
 
@@ -151,16 +155,3 @@ def paste(wall, block, loc):
     loc_zip = zip(loc, block.shape, wall.shape)
     wall_slices, block_slices = zip(*map(paste_slices, loc_zip))
     wall[wall_slices] = block[block_slices]
-
-
-def atoi(text):
-    return int(text) if text.isdigit() else text
-
-
-def natural_keys(text):
-    '''
-    alist.sort(key=natural_keys) sorts in human order
-    http://nedbatchelder.com/blog/200712/human_sorting.html
-    (See Toothy's implementation in the comments)
-    '''
-    return [atoi(c) for c in re.split(r'(\d+)', text)]
