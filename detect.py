@@ -189,7 +189,7 @@ def fill_values(frets, strings):
     return frets, strings, v1_mean, v2_mean
 
 
-def make_tab(fingers, frets, strings, v_frets, v_strings): #, ax):
+def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
     tab = np.zeros((15, 6))
 
     frets = frets[(-frets)[:, 1].argsort()]
@@ -218,8 +218,9 @@ def make_tab(fingers, frets, strings, v_frets, v_strings): #, ax):
         point1 = (seg_intersect(frets[0], frets[-1], finger, finger + v_strings))
         point2 = (seg_intersect(strings[0], strings[-1], finger, finger + v_frets))
 
-        #ax.scatter(point1[1], point1[0], c='r', s=3)
-        #ax.scatter(point2[1], point2[0], c='r', s=3)
+        if show_plots:
+            ax.scatter(point1[1], point1[0], c='r', s=3)
+            ax.scatter(point2[1], point2[0], c='r', s=3)
 
         string = strings[:, 0] - point2[0]
 
@@ -302,7 +303,7 @@ def load_tabs():
     return tabs
 
 
-def detect_chord(image, yolo, model, device):
+def detect_chord(image, yolo, model, device, show_plots=False):
     image = transforms.ToTensor()(image).type(torch.float32)[:3]
     image = rescale(image, (416, 416)).unsqueeze(0).to(device)
     detections = yolo(image)
@@ -310,52 +311,41 @@ def detect_chord(image, yolo, model, device):
 
     img = image.cpu().detach()[0]
 
-    '''# Bounding-box colors
-    cmap = plt.get_cmap("tab20b")
-    colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+    if show_plots:
+        # Bounding-box colors
+        cmap = plt.get_cmap("tab20b")
+        colors = [cmap(i) for i in np.linspace(0, 1, 20)]
 
-    plt.figure()
-    fig, ax = plt.subplots(1)
-    ax.imshow(transforms.ToPILImage()(img))
-    ax.axis('off')
+        plt.figure()
+        fig, ax = plt.subplots(1)
+        ax.imshow(transforms.ToPILImage()(img))
+        ax.axis('off')
 
-    # Draw bounding boxes and labels of detections
-    if detections .__len__() != 0:
-        detections = torch.cat([d for d in detections])
-        # Rescale boxes to original image
-        detections = rescale_boxes(detections, 416, image.shape[2:])
-        unique_labels = detections[:, -1].cpu().unique()
-        n_cls_preds = len(unique_labels)
-        bbox_colors = random.sample(colors, n_cls_preds)
-        for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-            print("\t+ Label: %s, Conf: %.5f" % ('Hand', cls_conf.item()))
+        # Draw bounding boxes and labels of detections
+        if detections .__len__() != 0:
+            detections = torch.cat([d for d in detections])
+            # Rescale boxes to original image
+            detections = rescale_boxes(detections, 416, image.shape[2:])
+            unique_labels = detections[:, -1].cpu().unique()
+            n_cls_preds = len(unique_labels)
+            bbox_colors = random.sample(colors, n_cls_preds)
+            for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
+                print("\t+ Label: %s, Conf: %.5f" % ('Hand', cls_conf.item()))
 
-            box_w = x2 - x1
-            box_h = y2 - y1
+                box_w = x2 - x1
+                box_h = y2 - y1
 
-            color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-            # Create a Rectangle patch
-            bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
-            # Add the bbox to the plot
-            ax.add_patch(bbox)
-    plt.show()'''
+                color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+                # Create a Rectangle patch
+                bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
+                # Add the bbox to the plot
+                ax.add_patch(bbox)
+        plt.show()
 
     if detections[0] is not None:
 
         detections = torch.cat([d for d in detections])
         detections = detections[detections[:, 0].argsort()]
-
-        '''if (detections[:, 1] <= 100).sum().item() > 0:
-            delete = np.where(detections[:, 1] <= 150)[0][0]
-            detections = torch.cat([detections[0:delete], detections[delete+1:]])
-        if (detections[:, 1] >= 300).sum().item() > 0:
-            delete = np.where(detections[:, 1] <= 300)[0][0]
-            detections = torch.cat([detections[0:delete], detections[delete + 1:]])
-
-        if detections.shape[0] == 3:
-            detect = detections[-2][:4] + torch.Tensor([-10, -40, +40, 0])
-        else:
-            detect = detections[-1][:4] + torch.Tensor([-10, -40, +40, 0])'''
 
         detect = detections[-1][:4] + torch.Tensor([-15, -20, +40, +20])
 
@@ -364,10 +354,11 @@ def detect_chord(image, yolo, model, device):
         cropped_img = img[:, detect[1].item():detect[3].item(), detect[0].item():detect[2].item()]
         cropped_img = rescale(cropped_img, (300, 300))
 
-        '''plt.figure()
-        plt.imshow(transforms.ToPILImage()(cropped_img))
-        plt.axis('off')
-        plt.show()'''
+        if show_plots:
+            plt.figure()
+            plt.imshow(transforms.ToPILImage()(cropped_img))
+            plt.axis('off')
+            plt.show()
 
         img = cropped_img.unsqueeze(0).to(device)
 
@@ -394,18 +385,19 @@ def detect_chord(image, yolo, model, device):
 
         frets, strings, v_strings, v_frets = fill_values(max2, max3)
 
-        '''fig, ax = plt.subplots(2, 2)
-        ax[1][1].imshow(transforms.ToPILImage()(img[0].cpu().detach()))
-        ax[1][1].scatter(max1[:, 1], max1[:, 0], s=3)
-        ax[1][1].scatter(frets[:, 1], frets[:, 0], s=3)
-        ax[1][1].scatter(strings[:, 1], strings[:, 0], s=3)
-        ax[0][0].imshow(transforms.ToPILImage()(output1[-1][0][0].clamp(0, 1).cpu().detach()))
-        ax[0][1].imshow(transforms.ToPILImage()(output2[-1][0][0].clamp(0, 1).cpu().detach()))
-        ax[1][0].imshow(transforms.ToPILImage()(output3[-1][0][0].clamp(0, 1).cpu().detach()))
-        ax[0][0].axis('off')
-        ax[0][1].axis('off')
-        ax[1][0].axis('off')
-        ax[1][1].axis('off')'''
+        if show_plots:
+            fig, ax = plt.subplots(2, 2)
+            ax[1][1].imshow(transforms.ToPILImage()(img[0].cpu().detach()))
+            ax[1][1].scatter(max1[:, 1], max1[:, 0], s=3)
+            ax[1][1].scatter(frets[:, 1], frets[:, 0], s=3)
+            ax[1][1].scatter(strings[:, 1], strings[:, 0], s=3)
+            ax[0][0].imshow(transforms.ToPILImage()(output1[-1][0][0].clamp(0, 1).cpu().detach()))
+            ax[0][1].imshow(transforms.ToPILImage()(output2[-1][0][0].clamp(0, 1).cpu().detach()))
+            ax[1][0].imshow(transforms.ToPILImage()(output3[-1][0][0].clamp(0, 1).cpu().detach()))
+            ax[0][0].axis('off')
+            ax[0][1].axis('off')
+            ax[1][0].axis('off')
+            ax[1][1].axis('off')
 
         if v_frets is None and v_strings is None:
             final_chord = None
@@ -414,9 +406,10 @@ def detect_chord(image, yolo, model, device):
             chord_conf = None
 
         else:
-            tab = make_tab(max1, frets, strings, v_frets, v_strings) #, ax[1][1])
+            tab = make_tab(max1, frets, strings, v_frets, v_strings, ax[1][1], show_plots=show_plots)
 
-            #plt.show()
+            if show_plots:
+                plt.show()
 
             target_tab = load_tabs()
 
@@ -445,9 +438,6 @@ def detect_chord(image, yolo, model, device):
                         points += 0.3 / loc.shape[0]
                     else:
                         points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
-
-                    '''elif tabs[min(a + 1, tabs.shape[0]-1), b] != 0 or tabs[max(a - 1, 0), b] != 0:
-                        points += 0.01/loc.shape[0]'''
 
                 chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
 
@@ -501,7 +491,7 @@ if __name__ == "__main__":
             if file.endswith('.jpg'):
                 image = Image.open(os.path.join(root, file))
 
-                final_chord, tab, chord_conf, _, _ = detect_chord(image, yolo, model, device=device)
+                final_chord, tab, chord_conf, _, _ = detect_chord(image, yolo, model, device=device, show_plots=True)
 
                 img_number = int(os.path.basename(file)[5:-4])
 

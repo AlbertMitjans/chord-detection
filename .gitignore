@@ -7,7 +7,7 @@ data/labels.xlsx
 data/tabs.xlsx
 data/train.txt
 data/val.txt
-data/video.mp4
+data/video*.mp4
 main_video.avi
 tfg.mp4
 loss/__pycache__/
@@ -18,3 +18,5 @@ output/
 transforms/__pycache__/
 utils/__pycache__/
 Tests/
+output*
+data/video1_chords.xlsx
