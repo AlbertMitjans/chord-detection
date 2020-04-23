@@ -106,7 +106,7 @@ class CornersDataset(Dataset):
         sample['frets'] = pad_to_square(sample['frets'])
         sample['strings'] = pad_to_square(sample['strings'])
 
-        '''if img_folder.startswith('1'):
+        if img_folder.startswith('1'):
             fig, ax = plt.subplots(2, 2)
             ax[0][0].axis('off')
             ax[0][1].axis('off')
@@ -116,7 +116,7 @@ class CornersDataset(Dataset):
             ax[0][1].imshow(transforms.ToPILImage()(sample['frets']), cmap='gray')
             ax[1][0].imshow(transforms.ToPILImage()(sample['strings']), cmap='gray')
             ax[1][1].imshow(transforms.ToPILImage()(sample['image']))
-            plt.show()'''
+            plt.show()
 
         return sample
 

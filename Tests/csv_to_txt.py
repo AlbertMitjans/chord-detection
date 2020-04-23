@@ -3,23 +3,12 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data/my_data', 'images'))
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data', '1'))
 i = 1
 
 while True:
-    png = False
-    try:
-        csv = pd.read_csv(os.path.join(directory, 'image{num}_hand.csv'.format(num=i)), header=None).values
-        img = plt.imread(os.path.join(directory, 'image{top1}.JPG'.format(top1=i)))
-    except FileNotFoundError:
-        print('PNG file')
-        png = True
-        try:
-            csv = pd.read_csv(os.path.join(directory, 'image{num}_hand.csv'.format(num=i)), header=None).values
-            img = plt.imread(os.path.join(directory, 'image{top1}.png'.format(top1=i)))
-        except FileNotFoundError:
-            i += 1
-            continue
+    csv = pd.read_csv(os.path.join(directory, 'image{num}_yolo.csv'.format(num=i)), header=None).values
+    img = plt.imread(os.path.join(directory, 'image{top1}.jpg'.format(top1=i)))
 
     height = csv[1, 1] - csv[0, 1]
     width = csv[1, 0] - csv[0, 0]
@@ -31,10 +20,6 @@ while True:
 
     np.savetxt('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\labels\\image{num}.txt'.format(num=i), text, newline=' ', fmt='%.10f')
 
-    '''if png:
-        plt.imsave('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\images\\image{num}.png'.format(num=i), img)
-    if not png:
-        plt.imsave(
-            'C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\images\\image{num}.jpg'.format(num=i), img)'''
+    plt.imsave('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\images\\image{num}.jpg'.format(num=i), img)
 
     i += 1

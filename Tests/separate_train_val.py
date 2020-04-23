@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import re
+import random
 
 train = []
 val = []
@@ -19,10 +20,26 @@ def natural_keys(text):
     return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
-for root, dirs, files in os.walk('C:\\Users\\Albert\\Desktop\\chord-detection\\data\\train_dataset'):
+for root, dirs, files in os.walk('C:\\Users\\Albert\\Desktop\\chord-detection\\data\\0'):
     files.sort(key=natural_keys)
     for i, file in enumerate(files):
-        folder = file[0]
-        train.append('data/{folder}/{file}'.format(file=file[2:], folder=folder))
+        if file.endswith('jpg'):
+            x = random.random()
+        if x < 0.8:
+            train.append('data/0/{file}'.format(file=file))
+        elif x > 0.8:
+            val.append('data/0/{file}'.format(file=file))
+
+
+for root, dirs, files in os.walk('C:\\Users\\Albert\\Desktop\\chord-detection\\data\\1'):
+    files.sort(key=natural_keys)
+    for i, file in enumerate(files):
+        if file.endswith('jpg'):
+            x = random.random()
+        if x < 0.8:
+            train.append('data/1/{file}'.format(file=file))
+        elif x > 0.8:
+            val.append('data/1/{file}'.format(file=file))
 
 np.savetxt('C:\\Users\\Albert\\Desktop\\chord-detection\\data\\train.txt', np.array(train), fmt='%s')
+np.savetxt('C:\\Users\\Albert\\Desktop\\chord-detection\\data\\val.txt', np.array(val), fmt='%s')

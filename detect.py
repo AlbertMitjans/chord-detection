@@ -1,5 +1,5 @@
-from models.Stacked_Hourglass import Bottleneck, HourglassNet
-from models.my_model import MyModel
+from models.MTL_stacked_Hourglass import Bottleneck, HourglassNet
+from models.MTL_my_model import MyModel
 import os
 from PIL import Image
 import torchvision.transforms as transforms
@@ -268,14 +268,14 @@ def make_tab(fingers, frets, strings, v_frets, v_strings): #, ax):
         fingers = fingers[fingers[:, 0].argsort()]
         fingers_x_sorted = fingers[fingers[:, 1].argsort()]
         if fingers_x_sorted.shape[0] > 1:
-            if fingers[0, 1] == np.max(fingers[:, 1]) and fingers[0, 1] - fingers_x_sorted[-2, 1] <= 18:
+            if fingers[0, 1] == np.max(fingers[:, 1]) and fingers[0, 1] - fingers_x_sorted[-2, 1] <= 10:
                 tab[pos_first_finger] = 0
                 tab = np.clip(tab - 1, a_min=0, a_max=None)
 
         # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
         # that fret to 1
 
-        elif np.max(tab[pos_first_finger[0]]) == 1:
+        if np.where(tab==1)[1] == 0 and np.max(tab[pos_first_finger[0]]) == 1:
             for i in range(6):
                 if np.max(tab[:, i]) == 0:
                     tab[pos_first_finger[0][0]][i] = 1
@@ -345,7 +345,7 @@ def detect_chord(image, yolo, model, device):
         detections = torch.cat([d for d in detections])
         detections = detections[detections[:, 0].argsort()]
 
-        if (detections[:, 1] <= 150).sum().item() > 0:
+        '''if (detections[:, 1] <= 100).sum().item() > 0:
             delete = np.where(detections[:, 1] <= 150)[0][0]
             detections = torch.cat([detections[0:delete], detections[delete+1:]])
         if (detections[:, 1] >= 300).sum().item() > 0:
@@ -355,7 +355,9 @@ def detect_chord(image, yolo, model, device):
         if detections.shape[0] == 3:
             detect = detections[-2][:4] + torch.Tensor([-10, -40, +40, 0])
         else:
-            detect = detections[-1][:4] + torch.Tensor([-10, -40, +40, 0])
+            detect = detections[-1][:4] + torch.Tensor([-10, -40, +40, 0])'''
+
+        detect = detections[-1][:4] + torch.Tensor([-15, -20, +40, +20])
 
         detect = detect.type(torch.int)
 
@@ -378,12 +380,6 @@ def detect_chord(image, yolo, model, device):
 
         max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.5)
         max1 = max1[max1[:, 0].argsort()]
-
-        # we delete the detected thumb
-
-        if max1.shape[0] > 1:
-            if max1[1, 0] - max1[0, 0] >= 70:
-                max1 = max1[1:]
 
         max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
 
@@ -413,6 +409,7 @@ def detect_chord(image, yolo, model, device):
 
         if v_frets is None and v_strings is None:
             final_chord = None
+            final_chord_conf = 0
             tab = None
             chord_conf = None
 
@@ -437,8 +434,8 @@ def detect_chord(image, yolo, model, device):
                 points = 0.
 
                 # Penalty for difference in number of fingers
-                points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 5
-                points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 5
+                points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0]
+                points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 2
 
                 for (a, b) in loc:
                     tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
@@ -455,22 +452,25 @@ def detect_chord(image, yolo, model, device):
                 chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
 
             final_chord = max(chord_conf, key=chord_conf.get)
+            final_chord_conf = chord_conf[final_chord][0]
+            final_chord = ''.join(i for i in final_chord if not i.isdigit())
 
     elif detections[0] is None:
         final_chord = None
+        final_chord_conf = 0
         tab = None
         chord_conf = None
         cropped_img = torch.zeros((3, 300, 300))
         output_img = torch.zeros((300, 300))
 
-    return final_chord, tab, chord_conf, cropped_img, output_img
+    return final_chord, final_chord_conf, tab, chord_conf, cropped_img, output_img
 
 
 def load_models():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     yolo = Darknet("config/yolov3-custom.cfg", img_size=416).to(device)
-    yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo.pth', map_location=device))
+    yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo2.pth', map_location=device))
     yolo.eval()
 
     model = HourglassNet(Bottleneck)
@@ -489,7 +489,8 @@ def load_models():
 if __name__ == "__main__":
     yolo, model, device = load_models()
 
-    target_chords = pd.read_excel(os.path.join(os.getcwd(), 'data/', '1_chords.xlsx'), header=None).values.tolist()
+    target_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data\\', 'labels.xlsx'), header=None).values.tolist())
+    target_chords = target_chords[np.where(target_chords[:, 0] == '1')][:, 1]
 
     precision = AverageMeter()
 
@@ -500,7 +501,7 @@ if __name__ == "__main__":
             if file.endswith('.jpg'):
                 image = Image.open(os.path.join(root, file))
 
-                final_chord, tab, chord_conf = detect_chord(image, yolo, model, device=device)
+                final_chord, tab, chord_conf, _, _ = detect_chord(image, yolo, model, device=device)
 
                 img_number = int(os.path.basename(file)[5:-4])
 

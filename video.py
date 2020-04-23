@@ -20,10 +20,10 @@ def update(i):
 
     elif ret is True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        final_chord, tab, chord_conf, cropped_img, output_img = detect_chord(frame, yolo, model, device=device)
+        _, _, _, chord_conf, cropped_img, output_img = detect_chord(frame, yolo, model, device=device)
 
         for idx, chord in vid_chords:
-            if i == idx:
+            if i == int(idx):
                 current_chord = chord
 
         if chord_conf is not None:
@@ -52,6 +52,7 @@ def update(i):
 
             c = Counter(average_detection)
             mc = c.most_common(1)
+            result = ''.join(i for i in mc[0][0] if not i.isdigit())
 
             frame = Image.fromarray(frame)
             frame.paste(cropped_img, (1100, 100))
@@ -61,7 +62,7 @@ def update(i):
             font = ImageFont.truetype("arial.ttf", 50)
             d.text((1380, 800), 'Chord: {chord}'.format(chord=current_chord),
                    fill=(255, 0, 0), font=font)
-            d.text((1250, 850), 'Prediction: {chord} ({conf} %)'.format(chord=mc[0][0], conf=round(mc[0][1][0], 2)),
+            d.text((1250, 850), 'Prediction: {chord} ({conf} %)'.format(chord=result, conf=round(mc[0][1][0], 2)),
                    fill=(255, 0, 0), font=font)
 
             frame = np.array(frame)
@@ -76,7 +77,7 @@ def update(i):
 directory = os.getcwd()
 
 vid = cv2.VideoCapture()
-vid.open(os.path.join(directory, 'data/guitarra.mp4'))
+vid.open(os.path.join(directory, 'data/video1.mp4'))
 
 ret, frame = vid.read()
 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -84,9 +85,8 @@ frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 global detection, average_detection, current_chord
 detection = []
 average_detection = []
-vid_chords = [[0, 'C'], [60, 'G'], [135, 'Am'], [205, 'F'], [250, 'G'], [285, 'C'], [355, 'G'], [435, 'Am'], [510, 'F'],
-              [540, 'G'], [590, 'C']]
-current_chord = 'C'
+vid_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data\\', 'video1_chords.xlsx'), header=None).values.tolist())
+current_chord = vid_chords[0][1]
 
 # Create plot
 fig, ax = plt.subplots(1, 1)
@@ -94,7 +94,7 @@ ax.axis('off')
 ax.set_title('Video')
 im = ax.imshow(frame)
 
-video = cv2.VideoWriter('main_video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, (1920, 1080), True)
+video = cv2.VideoWriter('output_video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, (1920, 1080), True)
 
 ani = FuncAnimation(fig, update, interval=1000/30, cache_frame_data=False)
 

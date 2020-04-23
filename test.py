@@ -37,9 +37,10 @@ def test(val_loader, model, device, save_imgs=False, show=False):
         strings_coord = data['string_coord']
 
         # compute output
-        output1 = model(input)[0].split(input.shape[0], dim=0)
-        output2 = model(input)[1].split(input.shape[0], dim=0)
-        output3 = model(input)[2].split(input.shape[0], dim=0)
+        output = model(input)
+        output1 = output[0].split(input.shape[0], dim=0)
+        output2 = output[1].split(input.shape[0], dim=0)
+        output3 = output[2].split(input.shape[0], dim=0)
 
         if show:
             import matplotlib.pyplot as plt

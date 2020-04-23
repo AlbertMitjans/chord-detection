@@ -11,6 +11,8 @@ from utils.tb_visualizer import Logger
 
 
 def train(ckpt, num_epochs, batch_size, device):
+    start = time.time()
+
     num_workers = 0
     lr = 8e-4
     momentum = 0
@@ -47,7 +49,7 @@ def train(ckpt, num_epochs, batch_size, device):
 
         # train for one epoch
         batch_time = AverageMeter()
-        data_time = AverageMeter()
+        total_time = AverageMeter()
         train_loss = AverageMeter()
 
         train_fingers_recall = AverageMeter()
@@ -64,11 +66,8 @@ def train(ckpt, num_epochs, batch_size, device):
         # switch to train mode
         model.train()
 
-        end = time.time()
         for data_idx, data in enumerate(train_loader):
-
-            # measure data loading time
-            data_time.update(time.time() - end)
+            batch_start = time.time()
             input = data['image'].float().to(device)
             target = data['target'].float().to(device)
             frets = data['frets'].float().to(device)
@@ -110,12 +109,14 @@ def train(ckpt, num_epochs, batch_size, device):
             optimizer.step()
 
             # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
+            batch_time.update(time.time() - batch_start)
+            total_time.update((time.time() - start)/60)
 
             if data_idx % print_freq == 0 and data_idx != 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
-                      'Loss.avg: {loss.avg:.4f}\n'
+                      'Loss.avg: {loss.avg:.4f}\t'
+                      'Batch time: {batch_time:.4f} s\t'
+                      'Total time: {total_time:.4f} min\n'
                       'FINGERS: \t'
                       'Recall(%): {top1:.3f}\t'
                       'Precision(%): {top2:.3f}\n'
@@ -127,10 +128,11 @@ def train(ckpt, num_epochs, batch_size, device):
                       'Precision(%): {top12:.3f}\n'
                       '---------------------------------------------------------------------------------------------'
                     .format(
-                    epoch, data_idx, len(train_loader), loss=train_loss,
-                    top1=train_fingers_recall.avg * 100, top2=train_fingers_precision.avg * 100,
-                    top6=train_frets_recall.avg * 100, top7=train_frets_precision.avg * 100,
-                    top11=train_strings_recall.avg * 100, top12=train_strings_precision.avg * 100))
+                    epoch, data_idx, len(train_loader), loss=train_loss, batch_time=batch_time.val,
+                    total_time=total_time.val, top1=train_fingers_recall.avg * 100,
+                    top2=train_fingers_precision.avg * 100, top6=train_frets_recall.avg * 100,
+                    top7=train_frets_precision.avg * 100, top11=train_strings_recall.avg * 100,
+                    top12=train_strings_precision.avg * 100))
 
         if epoch % evaluation_interval == 0:
             # evaluate on validation set

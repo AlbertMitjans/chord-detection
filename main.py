@@ -6,17 +6,12 @@ import argparse
 from train import train
 from test import test
 
-from time import time
-
 
 def main(train_flag, evaluate_val, save_imgs, ckpt, num_epochs, batch_size):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if train_flag:
-        start = time()
         train(ckpt, num_epochs, batch_size, device)
-        end = time()
-        print(end - start)
 
     elif not train_flag:
         num_workers = 0
@@ -60,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_imgs", type=str2bool, default=False, help="if True, output imgs will be saved")
     parser.add_argument("--batch_size", type=int, default=1, help="size of each image batch")
     parser.add_argument("--ckpt", type=str, default=None, help="path to ckpt file")
-    parser.add_argument("--num_epochs", type=int, default=200, help="number of epochs")
+    parser.add_argument("--num_epochs", type=int, default=100, help="number of epochs")
 
     opt = parser.parse_args()
     print(opt)

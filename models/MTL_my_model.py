@@ -8,6 +8,8 @@ class MyModel(nn.Module):
         self.conv1 = nn.Conv2d(16, 1, kernel_size=1)
 
     def forward(self, x):
-        out = self.conv1(x[0])
+        out1 = self.conv1(x[0])
+        out2 = self.conv1(x[1])
+        out3 = self.conv1(x[2])
 
-        return out
+        return out1, out2, out3
