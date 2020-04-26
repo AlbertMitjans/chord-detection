@@ -261,22 +261,22 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
         tab[np.clip(f, a_max=None, a_min=0)][-s] = idx + 1
 
     pos_first_finger = np.where(tab==1)
+    fingers = fingers[fingers[:, 0].argsort()]
+    fingers_x_sorted = fingers[fingers[:, 1].argsort()]
 
-    if pos_first_finger[1] == 0:
+    if fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] <= strings[5][0]:
 
         # we delete the value if we have another finger in the same fret (because it means we detected the thumb)
 
-        fingers = fingers[fingers[:, 0].argsort()]
-        fingers_x_sorted = fingers[fingers[:, 1].argsort()]
         if fingers_x_sorted.shape[0] > 1:
-            if fingers[0, 1] == np.max(fingers[:, 1]) and fingers[0, 1] - fingers_x_sorted[-2, 1] <= 10:
+            if np.abs(fingers[0, 1] - fingers_x_sorted[-2, 1]) <= 10 or np.max(tab[pos_first_finger[0]]) > 1:
                 tab[pos_first_finger] = 0
                 tab = np.clip(tab - 1, a_min=0, a_max=None)
 
         # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
         # that fret to 1
 
-        if np.where(tab==1)[1] == 0 and np.max(tab[pos_first_finger[0]]) == 1:
+        if fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] <= strings[5][0] and np.max(tab[pos_first_finger[0]]) == 1:
             for i in range(6):
                 if np.max(tab[:, i]) == 0:
                     tab[pos_first_finger[0][0]][i] = 1
@@ -344,10 +344,12 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
     if detections[0] is not None:
 
-        detections = torch.cat([d for d in detections])
+        if not show_plots:
+            detections = torch.cat([d for d in detections])
+
         detections = detections[detections[:, 0].argsort()]
 
-        detect = detections[-1][:4] + torch.Tensor([-15, -20, +40, +20])
+        detect = detections[-1][:4] + torch.Tensor([-15, -30, +40, +30])
 
         detect = detect.type(torch.int)
 
@@ -398,6 +400,9 @@ def detect_chord(image, yolo, model, device, show_plots=False):
             ax[0][1].axis('off')
             ax[1][0].axis('off')
             ax[1][1].axis('off')
+
+        if not show_plots:
+            ax = [[0, 0], [0, 0]]
 
         if v_frets is None and v_strings is None:
             final_chord = None
@@ -479,42 +484,57 @@ def load_models():
 if __name__ == "__main__":
     yolo, model, device = load_models()
 
-    target_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data\\', 'labels.xlsx'), header=None).values.tolist())
+    target_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data', 'labels.xlsx'), header=None).values.tolist())
     target_chords = target_chords[np.where(target_chords[:, 0] == '1')][:, 1]
 
     precision = AverageMeter()
 
     directory = 'data/1'
 
+    true_values = []
+    predict_values = []
+
     for root, dirs, files in os.walk(directory):
         for i, file in enumerate(files):
             if file.endswith('.jpg'):
-                image = Image.open(os.path.join(root, file))
+                num = file[5:-4]
+                if int(num) < 92:
+                    image = Image.open(os.path.join(root, file))
 
-                final_chord, tab, chord_conf, _, _ = detect_chord(image, yolo, model, device=device, show_plots=True)
+                    final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model, device=device, show_plots=False)
 
-                img_number = int(os.path.basename(file)[5:-4])
+                    img_number = int(os.path.basename(file)[5:-4])
 
-                target_chord = target_chords[img_number - 1][0]
+                    target_chord = target_chords[img_number - 1]
 
-                score = final_chord == target_chord
+                    score = final_chord == target_chord
 
-                precision.update(score)
+                    precision.update(score)
 
-                if score == 0:
+                    true_values.append(target_chord)
+                    predict_values.append(final_chord)
 
                     print(tab)
 
                     print(
                         '{file}:   Target: {chord}  ,  Prediction: {chord2} ({perc}%)'.format(file=file, chord=target_chord,
                                                                                               chord2=final_chord,
-                                                                                              perc=chord_conf[final_chord][
-                                                                                                  0]))
+                                                                                              perc=final_chord_conf))
                     print(precision.avg)
-
-                    plt.show()
 
                     print('---------------------------------------------------------------')
 
-                plt.close('all')
+                    plt.close('all')
+
+    np.savetxt('predicted_values.txt', predict_values, fmt='%s')
+    np.savetxt('true_values.txt', true_values, fmt='%s')
+    from sklearn.metrics import confusion_matrix
+    import seaborn as sn
+    chords = ['C', 'Cm', 'D', 'Dm', 'E', 'Em', 'F', 'Fm', 'G', 'Gm', 'A', 'Am', 'B', 'Bm']
+    conf_matrix = confusion_matrix(true_values, predict_values, labels=chords)
+    df_cm = pd.DataFrame(conf_matrix, index = [i for i in chords], columns= [i for i in chords])
+    figure = plt.figure(figsize=(10, 10))
+    sn.heatmap(df_cm, annot=True, cbar=False)
+    plt.savefig('hourglass.jpg')
+    plt.show()
 

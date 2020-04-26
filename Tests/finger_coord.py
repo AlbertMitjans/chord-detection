@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data/1'))
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data/new_images'))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, default=directory, help="path of the directory where the images are")
@@ -12,7 +12,7 @@ parser.add_argument("--display_time", type=int, default=3, help="time of the dis
                                                                 "colored circles")
 opt = parser.parse_args()
 
-i = 4
+i = 201
 
 try:
     path = os.path.abspath(opt.path)
@@ -107,7 +107,7 @@ while True:
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o2)
 
-    for a in range(10):
+    for a in range(8):
         o3 = fig.canvas.mpl_connect('button_press_event', onclick_3)
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o3)'''
@@ -128,7 +128,7 @@ while True:
                 fmt='%.3f')
     np.savetxt(os.path.join(directory, 'image{top1}_frets.csv'.format(top1=i)), np.asarray(frets), delimiter=',',
                 fmt='%.3f')'''
-    np.savetxt(os.path.join(directory, 'image{top1}_yolo2.csv'.format(top1=i)), np.asarray(hands), delimiter=',',
+    np.savetxt(os.path.join(directory, 'image{top1}_yolo.csv'.format(top1=i)), np.asarray(hands), delimiter=',',
                fmt='%.3f')
 
     i += 1

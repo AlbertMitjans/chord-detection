@@ -21,7 +21,7 @@ def train(ckpt, num_epochs, batch_size, device):
     directory = 'data/'
     start_epoch = 0
     start_loss = 0
-    print_freq = 20
+    print_freq = 10
     checkpoint_interval = 1
     evaluation_interval = 1
 
@@ -69,10 +69,10 @@ def train(ckpt, num_epochs, batch_size, device):
         for data_idx, data in enumerate(train_loader):
             batch_start = time.time()
             input = data['image'].float().to(device)
-            target = data['target'].float().to(device)
+            target = data['fingers'].float().to(device)
             frets = data['frets'].float().to(device)
             strings = data['strings'].float().to(device)
-            target_coord = data['target_coord']
+            target_coord = data['finger_coord']
             frets_coord = data['fret_coord']
             strings_coord = data['string_coord']
 
@@ -178,3 +178,6 @@ def train(ckpt, num_epochs, batch_size, device):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': train_loss.avg
             }, "checkpoints/hg_ckpt_{0}.pth".format(epoch))
+
+
+        print('Epoch time: {time}'.format(time=(time.time() - start_epoch)/60))

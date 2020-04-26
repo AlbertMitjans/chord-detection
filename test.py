@@ -29,10 +29,10 @@ def test(val_loader, model, device, save_imgs=False, show=False):
 
     for data_idx, data in enumerate(val_loader):
         input = data['image'].float().to(device)
-        target = data['target'].float().to(device)
+        target = data['fingers'].float().to(device)
         frets = data['frets'].float().to(device)
         strings = data['strings'].float().to(device)
-        target_coord = data['target_coord']
+        target_coord = data['finger_coord']
         frets_coord = data['fret_coord']
         strings_coord = data['string_coord']
 

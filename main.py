@@ -52,9 +52,9 @@ if __name__ == "__main__":
     parser.add_argument("--train", type=str2bool, default=True, help="if True/False, training/testing will be implemented")
     parser.add_argument("--val_data", type=str2bool, default=True, help="if True/False, all/validation data will be used "
                                                                     "for testing")
-    parser.add_argument("--save_imgs", type=str2bool, default=False, help="if True, output imgs will be saved")
+    parser.add_argument("--save_imgs", type=str2bool, default=True, help="if True, output imgs will be saved")
     parser.add_argument("--batch_size", type=int, default=1, help="size of each image batch")
-    parser.add_argument("--ckpt", type=str, default=None, help="path to ckpt file")
+    parser.add_argument("--ckpt", type=str, default="checkpoints/best_ckpt/hourglass4.pth", help="path to ckpt file")
     parser.add_argument("--num_epochs", type=int, default=100, help="number of epochs")
 
     opt = parser.parse_args()

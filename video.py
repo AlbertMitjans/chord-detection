@@ -77,7 +77,7 @@ def update(i):
 directory = os.getcwd()
 
 vid = cv2.VideoCapture()
-vid.open(os.path.join(directory, 'data/video1.mp4'))
+vid.open(os.path.join(directory, 'data/video1_guillem.mp4'))
 
 ret, frame = vid.read()
 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -85,7 +85,7 @@ frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 global detection, average_detection, current_chord
 detection = []
 average_detection = []
-vid_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data\\', 'video1_chords.xlsx'), header=None).values.tolist())
+vid_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data\\', 'video1_albert_chords.xlsx'), header=None).values.tolist())
 current_chord = vid_chords[0][1]
 
 # Create plot

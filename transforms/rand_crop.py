@@ -1,9 +1,7 @@
 from __future__ import print_function, division
-import torch
 import numpy as np
 import torchvision.transforms as transforms
-
-from PIL import Image, ImageFilter
+import torchvision.transforms.functional as TF
 
 
 class RandomCrop(object):
@@ -12,17 +10,16 @@ class RandomCrop(object):
 
     def __call__(self, sample):
         if np.random.random() < 0.5:
-            image, grid = sample['image'], sample['features']
-            rc = transforms.RandomCrop((int(image.shape[1] * self.size), int(image.shape[2] * self.size)))
-            im_grid = torch.cat((image, grid))
-            crop_im_grid = rc(transforms.ToPILImage()(im_grid))
-            im1, im2, im3, gr1, gr2, gr3, gr4 = Image.Image.split(crop_im_grid)
-            crop_image = Image.merge('RGB', (im1, im2, im3))
-            crop_grid = Image.merge('RGBA', (gr1, gr2, gr3, gr4))
-            res_image = transforms.ToTensor()(crop_image.resize((image.shape[2], image.shape[1])))
-            grid = transforms.ToTensor()(crop_grid.resize((image.shape[2], image.shape[1])))
+            image, fingers, frets, strings = sample['image'], sample['fingers'], sample['frets'], sample['strings']
+            i, j, h, w = transforms.RandomCrop.get_params(image, output_size=(int(image.shape[1] * self.size), int(image.shape[2] * self.size)))
+            image = transforms.ToTensor()(TF.crop(transforms.ToPILImage()(image), i, j, h, w))
+            fingers = transforms.ToTensor()(TF.crop(transforms.ToPILImage()(fingers), i, j, h, w))
+            frets = transforms.ToTensor()(TF.crop(transforms.ToPILImage()(frets), i, j, h, w))
+            strings = transforms.ToTensor()(TF.crop(transforms.ToPILImage()(strings), i, j, h, w))
 
-            sample['image'] = res_image
-            sample['grid'] = grid
+            sample['image'] = image
+            sample['fingers'] = fingers
+            sample['frets'] = frets
+            sample['strings'] = strings
 
         return sample

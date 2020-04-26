@@ -15,6 +15,7 @@ from models.MTL_my_model import MyModel
 from transforms.rand_crop import RandomCrop
 from transforms.rand_horz_flip import HorizontalFlip
 from transforms.rescale import Rescale
+from transforms.random_rotation import RandomRotation
 
 
 class AverageMeter(object):
@@ -62,12 +63,13 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0):
 
     cudnn.benchmark = True
 
-    random_crop = RandomCrop(size=0.9)
+    random_crop = RandomCrop(size=0.95)
     horizontal_flip = HorizontalFlip()
-    rescale = Rescale((300, 300))
+    random_rotation = RandomRotation()
+    rescale = Rescale(300)
 
     train_dataset = CornersDataset(root_dir=directory + 'train.txt', end_file=end_file,
-                                   transform=transforms.Compose([rescale]))
+                                   transform=transforms.Compose([horizontal_flip, random_crop, random_rotation, rescale]))
     val_dataset = CornersDataset(root_dir=directory + 'val.txt', end_file=end_file,
                                  transform=transforms.Compose([rescale]))
 
