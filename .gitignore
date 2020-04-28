@@ -2,12 +2,13 @@ checkpoints/best_ckpt/
 checkpoints/hg_s2_b1/
 data/0
 data/1
+data/2
 data/README.txt
 data/labels.xlsx
 data/tabs.xlsx
 data/train.txt
 data/val.txt
-data/video*.mp4
+data/video*
 main_video.avi
 tfg.mp4
 loss/__pycache__/
@@ -19,4 +20,5 @@ transforms/__pycache__/
 utils/__pycache__/
 Tests/
 output*
-data/video1_chords.xlsx
+logs/
+hourglass.jpg
