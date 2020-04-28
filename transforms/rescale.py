@@ -1,5 +1,6 @@
 import torchvision.transforms as transform
 import torch
+import numpy as np
 
 
 class Rescale(object):
@@ -17,9 +18,6 @@ class Rescale(object):
 
     def __call__(self, sample):
         image = sample['image']
-        fingers = sample['fingers']
-        frets = sample['frets']
-        strings = sample['strings']
 
         h, w = image.shape[-2:]
         if isinstance(self.output_size, int):
@@ -35,13 +33,22 @@ class Rescale(object):
         resize = transform.Resize((new_h, new_w))
 
         img = transform.ToTensor()(resize(transform.ToPILImage()(image)))
-        fingers = transform.ToTensor()(resize(transform.ToPILImage()(fingers)))
-        frets = transform.ToTensor()(resize(transform.ToPILImage()(frets)))
-        strings = transform.ToTensor()(resize(transform.ToPILImage()(strings)))
+
+        rx = img.shape[1]/image.shape[1]
+        ry = img.shape[2]/image.shape[2]
 
         sample['image'] = img
-        sample['fingers'] = fingers
-        sample['frets'] = frets
-        sample['strings'] = strings
+        fingers = []
+        frets = []
+        strings = []
+        for finger in sample['finger_coord']:
+            fingers.append([rx*finger[0], ry*finger[1]])
+        for fret in sample['fret_coord']:
+            frets.append([rx*fret[0], ry*fret[1]])
+        for string in sample['string_coord']:
+            strings.append([rx*string[0], ry*string[1]])
+        sample['finger_coord'] = np.array(fingers)
+        sample['fret_coord'] = np.array(frets)
+        sample['string_coord'] = np.array(strings)
 
         return sample

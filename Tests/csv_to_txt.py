@@ -3,12 +3,14 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data', '1'))
-i = 165
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data', '2'))
+i = 304
+j = 1
 
 while True:
-    csv = pd.read_csv(os.path.join(directory, 'image{num}_yolo.csv'.format(num=i)), header=None).values
-    img = plt.imread(os.path.join(directory, 'image{top1}.jpg'.format(top1=i)))
+    csv = pd.read_csv(os.path.join(directory, 'image{num}_yolo.csv'.format(num=j)), header=None).values
+    img = plt.imread(os.path.join(directory, 'image{top1}.jpg'.format(top1=j)))
+    j += 1
 
     height = csv[1, 1] - csv[0, 1]
     width = csv[1, 0] - csv[0, 0]
@@ -20,7 +22,7 @@ while True:
 
     np.savetxt('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\labels\\image{num}.txt'.format(num=i), text, newline=' ', fmt='%.10f')
 
-    plt.imsave('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\images\\image{num}.jpg'.format(num=i), img)
+    #plt.imsave('C:\\Users\\Albert\\Desktop\\yolo\\data\\custom\\images\\image{num}.jpg'.format(num=i), img)
 
     print(i)
 

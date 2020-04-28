@@ -69,7 +69,7 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0):
     rescale = Rescale(300)
 
     train_dataset = CornersDataset(root_dir=directory + 'train.txt', end_file=end_file,
-                                   transform=transforms.Compose([horizontal_flip, random_crop, random_rotation, rescale]))
+                                   transform=transforms.Compose([random_crop, horizontal_flip, random_rotation, rescale]))
     val_dataset = CornersDataset(root_dir=directory + 'val.txt', end_file=end_file,
                                  transform=transforms.Compose([rescale]))
 

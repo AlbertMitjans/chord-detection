@@ -161,7 +161,8 @@ def train(ckpt, num_epochs, batch_size, device):
             # 2. Log values and gradients of the parameters (histogram summary)
             for tag, value in model.named_parameters():
                 tag = tag.replace('.', '/')
-                logger.histo_summary(tag, value.data.cpu().numpy(), epoch)
+                try: logger.histo_summary(tag, value.data.cpu().numpy(), epoch)
+                except ValueError: print('hey')
                 logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), epoch)
 
             # 3. Log training images (image summary)

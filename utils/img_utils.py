@@ -13,7 +13,7 @@ from pathlib import Path
 def rescale(image, size):
     h, w = image.shape[-2:]
     if isinstance(size, int):
-        if h > w:
+        if h < w:
             new_h, new_w = size * h / w, size
         else:
             new_h, new_w = size, size * w / h

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data/new_images'))
+directory = os.path.abspath(os.path.join(os.getcwd(), '..', 'data/2'))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, default=directory, help="path of the directory where the images are")
@@ -12,7 +12,7 @@ parser.add_argument("--display_time", type=int, default=3, help="time of the dis
                                                                 "colored circles")
 opt = parser.parse_args()
 
-i = 201
+i = 166
 
 try:
     path = os.path.abspath(opt.path)
@@ -97,7 +97,7 @@ while True:
     fig.suptitle('Image {top1}'.format(top1=i))
     plt.imshow(im)
 
-    '''for a in range(4):
+    for a in range(4):
         o1 = fig.canvas.mpl_connect('button_press_event', onclick_1)
         plt.waitforbuttonpress()
         fig.canvas.mpl_disconnect(o1)
@@ -110,7 +110,7 @@ while True:
     for a in range(8):
         o3 = fig.canvas.mpl_connect('button_press_event', onclick_3)
         plt.waitforbuttonpress()
-        fig.canvas.mpl_disconnect(o3)'''
+        fig.canvas.mpl_disconnect(o3)
 
     '''stop = {'stop': False}
 
@@ -123,12 +123,12 @@ while True:
     plt.waitforbuttonpress()
     plt.close('all')
 
-    '''np.savetxt(os.path.join(directory, 'image{top1}_fingers.csv'.format(top1=i)), np.asarray(fingers), delimiter=',', fmt='%.3f')
+    np.savetxt(os.path.join(directory, 'image{top1}_fingers.csv'.format(top1=i)), np.asarray(fingers), delimiter=',', fmt='%.3f')
     np.savetxt(os.path.join(directory, 'image{top1}_strings.csv'.format(top1=i)), np.asarray(strings), delimiter=',',
                 fmt='%.3f')
     np.savetxt(os.path.join(directory, 'image{top1}_frets.csv'.format(top1=i)), np.asarray(frets), delimiter=',',
-                fmt='%.3f')'''
-    np.savetxt(os.path.join(directory, 'image{top1}_yolo.csv'.format(top1=i)), np.asarray(hands), delimiter=',',
+                fmt='%.3f')
+    np.savetxt(os.path.join(directory, 'image{top1}_hand.csv'.format(top1=i)), np.asarray(hands), delimiter=',',
                fmt='%.3f')
 
     i += 1

@@ -9,7 +9,9 @@ from utils.utils import AverageMeter
 from models.yolo import *
 from utils.yolo_utils import *
 from utils.img_utils import rescale
+from transforms.pad_to_square import pad_to_square
 import random
+import re
 
 
 def fill_values(frets, strings):
@@ -18,9 +20,8 @@ def fill_values(frets, strings):
     if strings.shape[0] > 1 and frets.shape[0] > 1:
 
         # We delete bad values of strings
-        deviation = np.abs(np.mean(strings[:, 1]) - strings[:, 1])
-        std = np.std(strings, axis=0)[1]
-        strings = strings[np.where(deviation <= std*2)]
+        deviation = np.abs(frets[0, 1] - strings[:, 1])
+        strings = strings[np.where(deviation <= np.min(deviation) + 15)]
 
         # We compute the vectors of the strings
 
@@ -45,7 +46,7 @@ def fill_values(frets, strings):
             strings_2 = []
 
             for i, val in enumerate(v1_all):
-                if np.abs(np.dot(val, v1_allmin))/np.linalg.norm(val)/np.linalg.norm(v1_allmin) >= 0.8:
+                if np.abs(np.dot(val, v1_allmin))/np.linalg.norm(val)/np.linalg.norm(v1_allmin) >= 0.7:
                     d1.append(d1_all[i])
                     if strings_2.__len__() == 0:
                         strings_2.append(strings[i])
@@ -56,12 +57,12 @@ def fill_values(frets, strings):
             # We fill the empty values between two detected strings
 
             for idx, dist in enumerate(d1):
-                if dist > np.min(d1)*2.8 and strings.shape[0] < 6:
+                if dist > np.min(d1)*2.6 and strings.shape[0] < 6:
                     vector = strings[idx + 1] - strings[idx]
                     strings = np.append(strings, [strings[idx] + vector / 3], axis=0)
                     strings = np.append(strings, [strings[idx] + 2 * vector / 3], axis=0)
 
-                elif dist > np.min(d1)*1.8 and strings.shape[0] < 6:
+                elif dist >= np.min(d1)*1.5 and strings.shape[0] < 6:
                     vector = strings[idx + 1] - strings[idx]
                     strings = np.append(strings, [strings[idx] + vector/2], axis=0)
 
@@ -170,7 +171,7 @@ def fill_values(frets, strings):
 
                 # We fill the empty values of the strings w.r.t. the frets
 
-                while np.abs(np.dot(first_fret - last_string, v1_mean)) > (np.linalg.norm(v1_mean)**2)*0.7 and strings.shape[0] < 6:
+                while np.abs(np.dot(first_fret - last_string, v1_mean)) > (np.linalg.norm(v1_mean)**2)*0.9 and strings.shape[0] < 6:
                     last_string = last_string + v1_mean
                     strings = np.append(strings, [last_string], axis=0)
 
@@ -214,72 +215,64 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
         num = np.dot(dap, dp)
         return (num / denom.astype(float)) * db + b1
 
-    for idx, finger in enumerate(fingers):
+    idx = 0
+
+    for finger in fingers:
         point1 = (seg_intersect(frets[0], frets[-1], finger, finger + v_strings))
         point2 = (seg_intersect(strings[0], strings[-1], finger, finger + v_frets))
 
-        if show_plots:
-            ax.scatter(point1[1], point1[0], c='r', s=3)
-            ax.scatter(point2[1], point2[0], c='r', s=3)
+        if point2[0] < strings[0][0] + 5:
 
-        string = strings[:, 0] - point2[0]
+            if show_plots:
+                ax.scatter(point1[1], point1[0], c='r', s=3)
+                ax.scatter(point2[1], point2[0], c='r', s=3)
 
-        for i, x in enumerate(string):
-            if x < 0:
-                if i == 0:
-                    s = 1
-                elif i == 5:
-                    s = 5
-                elif np.abs(x) <= string[i-1]/2:
+            string = strings[:, 0] - point2[0]
+
+            for i, x in enumerate(string):
+                if x < 0:
+                    if i == 0:
+                        s = 1
+                    elif np.abs(x) <= string[i-1]/1.3:
+                        s = i + 1
+                    elif np.abs(x) > string[i-1]/1.3:
+                        s = i
+                    break
+                elif x == 0:
                     s = i + 1
-                elif np.abs(x) > string[i-1]/2:
-                    s = i
-                break
-            elif x == 0:
-                if i == 5:
-                    s = 5
+                    break
                 else:
-                    s = i + 1
-                break
-            else:
-                s = 6
+                    s = 6
 
-        fret = frets[:, 1] - point1[1]
+            fret = frets[:, 1] - point1[1]
 
-        for i, x in enumerate(fret):
-            if x <= 0:
-                if fret[i - 1] <= np.abs(x)/7:
-                    f = i - 2
-                elif s == 6 and fret[i - 1] <= np.abs(x) and idx == 0:
-                    f = i - 2
+            for i, x in enumerate(fret):
+                if x <= 0:
+                    if s == 6 and fret[i - 1] <= np.abs(x) and idx == 0:
+                        f = i - 2
+                    else:
+                        f = i - 1
+                    break
                 else:
                     f = i - 1
-                break
-            else:
-                f = i - 1
 
-        tab[np.clip(f, a_max=None, a_min=0)][-s] = idx + 1
+            if tab[np.clip(f, a_max=None, a_min=0)][-s] == 0:
+                tab[np.clip(f, a_max=None, a_min=0)][-s] = idx + 1
+
+            idx += 1
 
     pos_first_finger = np.where(tab==1)
     fingers = fingers[fingers[:, 0].argsort()]
     fingers_x_sorted = fingers[fingers[:, 1].argsort()]
 
-    if fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] <= strings[5][0]:
-
-        # we delete the value if we have another finger in the same fret (because it means we detected the thumb)
-
-        if fingers_x_sorted.shape[0] > 1:
-            if np.abs(fingers[0, 1] - fingers_x_sorted[-2, 1]) <= 10 or np.max(tab[pos_first_finger[0]]) > 1:
-                tab[pos_first_finger] = 0
-                tab = np.clip(tab - 1, a_min=0, a_max=None)
-
+    if (fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] < (strings[5][0] + 2)) or np.where(tab == 1)[1][0] == 0:
         # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
         # that fret to 1
+        for i in range(6):
+            if np.max(tab[:, i]) == 0:
+                tab[pos_first_finger[0][0]][i] = 1
 
-        if fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] <= strings[5][0] and np.max(tab[pos_first_finger[0]]) == 1:
-            for i in range(6):
-                if np.max(tab[:, i]) == 0:
-                    tab[pos_first_finger[0][0]][i] = 1
+    tab[np.where(tab != 0)] = 1
 
     tab = tab[:np.max(np.where(tab != 0)[0]) + 2]
 
@@ -305,11 +298,19 @@ def load_tabs():
 
 def detect_chord(image, yolo, model, device, show_plots=False):
     image = transforms.ToTensor()(image).type(torch.float32)[:3]
-    image = rescale(image, (416, 416)).unsqueeze(0).to(device)
-    detections = yolo(image)
-    detections = non_max_suppression(detections, conf_thres=0.5, nms_thres=0.01)
+    yolo_image = rescale(image, (416, 416)).unsqueeze(0).to(device)
+    Ry = np.float(image.shape[1])/np.float(yolo_image.shape[2])
+    Rx = np.float(image.shape[2])/np.float(yolo_image.shape[3])
+    yolo_detection = yolo(yolo_image)
+    nms_detections = non_max_suppression(yolo_detection.clone(), conf_thres=0.5, nms_thres=0.01)
+    nms_i = 1
+    while nms_detections[0] is None:
+        nms_detections = non_max_suppression(yolo_detection.clone(), conf_thres=0.5 / nms_i, nms_thres=0.01)
+        nms_i += 1
 
-    img = image.cpu().detach()[0]
+    detections = nms_detections
+
+    img = yolo_image.cpu().detach()[0]
 
     if show_plots:
         # Bounding-box colors
@@ -322,10 +323,10 @@ def detect_chord(image, yolo, model, device, show_plots=False):
         ax.axis('off')
 
         # Draw bounding boxes and labels of detections
-        if detections .__len__() != 0:
+        if detections[0] is not None:
             detections = torch.cat([d for d in detections])
             # Rescale boxes to original image
-            detections = rescale_boxes(detections, 416, image.shape[2:])
+            detections = rescale_boxes(detections, 416, yolo_image.shape[2:])
             unique_labels = detections[:, -1].cpu().unique()
             n_cls_preds = len(unique_labels)
             bbox_colors = random.sample(colors, n_cls_preds)
@@ -349,12 +350,14 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
         detections = detections[detections[:, 0].argsort()]
 
-        detect = detections[-1][:4] + torch.Tensor([-15, -30, +40, +30])
+        detect = detections[-1][:4] + torch.Tensor([-8, -20, +35, +0])
+        detect = torch.Tensor([Rx*detect[0], Ry*detect[1], Rx*detect[2], Ry*detect[3]])
 
         detect = detect.type(torch.int)
 
-        cropped_img = img[:, detect[1].item():detect[3].item(), detect[0].item():detect[2].item()]
-        cropped_img = rescale(cropped_img, (300, 300))
+        cropped_img = image[:, detect[1].item():detect[3].item(), detect[0].item():detect[2].item()]
+        cropped_img = rescale(cropped_img, (300))
+        cropped_img = pad_to_square(cropped_img)
 
         if show_plots:
             plt.figure()
@@ -371,19 +374,24 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
         output_img = output1[-1][0][0] + output2[-1][0][0] + output3[-1][0][0]
 
-        max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.5)
+        max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.45)
+        if max1.shape[0] == 2:
+            max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.43)
+
         max1 = max1[max1[:, 0].argsort()]
 
         max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
 
-        # if we only detected one fret, we lower the threshold
+        if max2.shape[0] == 2:
+            if max2[0][1] - max2[1][1] > 50:
+                max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
 
-        if max2.shape[0] == 1:
-            max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
         max2 = max2[(-max2)[:, 1].argsort()]
 
-        max3 = local_max(output3[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.4)
+        max3 = local_max(output3[-1][0][0].cpu().detach().numpy(), min_dist=6, t_rel=0.4)
         max3 = max3[(-max3)[:, 0].argsort()]
+
+        # we fill the missing values of the frets and strings
 
         frets, strings, v_strings, v_frets = fill_values(max2, max3)
 
@@ -404,7 +412,7 @@ def detect_chord(image, yolo, model, device, show_plots=False):
         if not show_plots:
             ax = [[0, 0], [0, 0]]
 
-        if v_frets is None and v_strings is None:
+        if (v_frets is None and v_strings is None) or strings.shape[0] != 6:
             final_chord = None
             final_chord_conf = 0
             tab = None
@@ -432,15 +440,26 @@ def detect_chord(image, yolo, model, device, show_plots=False):
                 points = 0.
 
                 # Penalty for difference in number of fingers
-                points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0]
+                points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 2
                 points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 2
 
-                for (a, b) in loc:
-                    tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
-                    if tabs[a, b] != 0:
-                        points += 1 / loc.shape[0]
-                    elif tabs[a, min(b + 1, 5)] != 0 or tabs[a, max(b - 1, 0)] != 0:
-                        points += 0.3 / loc.shape[0]
+                new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
+                new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
+
+                num_fingers = np.where(tab != 0)[0].shape[0]
+                comparison = new_tab - new_tabs
+                error_tab = np.array(np.where(comparison > 0)).transpose()
+                finger_tabs = np.array(np.where(tabs != 0)).transpose()
+
+                points += 1*(num_fingers-error_tab.shape[0])/loc.shape[0]
+
+                for (a, b) in error_tab:
+                    dist = np.abs(finger_tabs - np.array([a, b]))
+                    if np.min(dist[:, 0]) == 0:
+                        if np.any(dist[np.where(dist[:, 0] == 0)][:, 1] == 1):
+                            points += 0.3 / loc.shape[0]
+                        else:
+                            points -= 0.5 / loc.shape[0]
                     else:
                         points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
 
@@ -465,7 +484,7 @@ def load_models():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     yolo = Darknet("config/yolov3-custom.cfg", img_size=416).to(device)
-    yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo2.pth', map_location=device))
+    yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo3.pth', map_location=device))
     yolo.eval()
 
     model = HourglassNet(Bottleneck)
@@ -474,7 +493,7 @@ def load_models():
     model = nn.DataParallel(model)
     model.to(device)
 
-    checkpoint = torch.load('checkpoints/best_ckpt/hourglass.pth')
+    checkpoint = torch.load('checkpoints/hg_ckpt_42.pth')
 
     model.load_state_dict(checkpoint['model_state_dict'])
 
@@ -482,26 +501,40 @@ def load_models():
 
 
 if __name__ == "__main__":
+    def atoi(text):
+        return int(text) if text.isdigit() else text
+
+
+    def natural_keys(text):
+        '''
+        alist.sort(key=natural_keys) sorts in human order
+        http://nedbatchelder.com/blog/200712/human_sorting.html
+        (See Toothy's implementation in the comments)
+        '''
+        return [atoi(c) for c in re.split(r'(\d+)', text)]
+
     yolo, model, device = load_models()
 
     target_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data', 'labels.xlsx'), header=None).values.tolist())
-    target_chords = target_chords[np.where(target_chords[:, 0] == '1')][:, 1]
+    target_chords = target_chords[np.where(target_chords[:, 0] == '2')][:, 1]
 
     precision = AverageMeter()
 
-    directory = 'data/1'
+    directory = 'data/2'
 
     true_values = []
     predict_values = []
 
     for root, dirs, files in os.walk(directory):
+        files.sort(key=natural_keys)
         for i, file in enumerate(files):
             if file.endswith('.jpg'):
                 num = file[5:-4]
-                if int(num) < 92:
+                if int(num) < 2000:
                     image = Image.open(os.path.join(root, file))
 
-                    final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model, device=device, show_plots=False)
+                    final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model,
+                                                                                        device=device, show_plots=False)
 
                     img_number = int(os.path.basename(file)[5:-4])
 
@@ -514,17 +547,25 @@ if __name__ == "__main__":
                     true_values.append(target_chord)
                     predict_values.append(final_chord)
 
-                    print(tab)
+                    print(i/6)
 
-                    print(
-                        '{file}:   Target: {chord}  ,  Prediction: {chord2} ({perc}%)'.format(file=file, chord=target_chord,
-                                                                                              chord2=final_chord,
-                                                                                              perc=final_chord_conf))
-                    print(precision.avg)
+                    if score == 0:
 
-                    print('---------------------------------------------------------------')
+                        print(tab)
 
-                    plt.close('all')
+                        print(
+                            '{file}:   Target: {chord}  ,  Prediction: {chord2} ({perc}%)'.format(file=file,
+                                                                                                  chord=target_chord,
+                                                                                                  chord2=final_chord,
+                                                                                                  perc=final_chord_conf))
+
+                        print(precision.avg)
+
+                        print('---------------------------------------------------------------')
+
+                        plt.close('all')
+
+    print(precision.avg)
 
     np.savetxt('predicted_values.txt', predict_values, fmt='%s')
     np.savetxt('true_values.txt', true_values, fmt='%s')
@@ -535,6 +576,6 @@ if __name__ == "__main__":
     df_cm = pd.DataFrame(conf_matrix, index = [i for i in chords], columns= [i for i in chords])
     figure = plt.figure(figsize=(10, 10))
     sn.heatmap(df_cm, annot=True, cbar=False)
-    plt.savefig('hourglass.jpg')
+    plt.savefig('hourglass3.jpg')
     plt.show()
 
