@@ -493,7 +493,7 @@ def load_models():
     model = nn.DataParallel(model)
     model.to(device)
 
-    checkpoint = torch.load('checkpoints/best_ckpt/hourglass.pth')
+    checkpoint = torch.load('checkpoints/best_ckpt/MTL_hourglass.pth')
 
     model.load_state_dict(checkpoint['model_state_dict'])
 
