@@ -111,34 +111,24 @@ def multiple_gaussians(output, target, min_dist):
     for index in max_out:
         max_values.append(output[index[0]][index[1]])
 
-    max_out = np.array([x for _, x in sorted(zip(max_values, max_out), reverse=True, key=lambda x: x[0])])
+    max_out_2 = np.array([x for _, x in sorted(zip(max_values, max_out), reverse=True, key=lambda x: x[0])])
 
-    for n in range(max_target.shape[0]):
-        max_out2 = max_out[:n + 1]
-        for i, (c, d) in enumerate(max_out2):
-            if i < max_out2.shape[0] - 1:
-                dist = np.absolute((max_out2[i + 1][0] - c, max_out2[i + 1][1] - d))
-                if dist[0] <= 5 and dist[1] <= 5:
-                    continue
-            allp += 1
-            count = 0
-            for (a, b) in max_target:
-                l = np.absolute((a - c, b - d))
-                if l[0] <= 5 and l[1] <= 5:
-                    truep += 1
-                    count += 1
-                    if count > 1:
-                        allp += 1
+    for (a, b) in max_target:
+        allp += 1
+        for (c, d) in max_out_2:
+            l = np.absolute((a - c, b - d))
+            if l[0] <= min_dist and l[1] <= min_dist:
+                delete = np.where(np.all(max_out_2 == np.array([c, d]), axis=1))[0]
+                max_out_2 = np.delete(max_out_2, delete, 0)
+                truep += 1
+                break
 
-    if max_out.shape[0] == 0:
-        total_recall = 0
-        total_precision = 0
-    elif max_target.shape[0] == 0:
+    if max_out.shape[0] == 0 or max_target.shape[0] == 0:
         total_recall = 0
         total_precision = 0
     else:
-        total_recall = min(truep, max_target.shape[0]) / max_target.shape[0]
-        total_precision = truep / allp
+        total_recall = truep / allp
+        total_precision = truep / max_out.shape[0]
 
     '''import matplotlib.pyplot as plt
     import torchvision.transforms as transforms

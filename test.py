@@ -35,6 +35,7 @@ def test(val_loader, model, device, save_imgs=False, show=False):
         target_coord = data['finger_coord']
         frets_coord = data['fret_coord']
         strings_coord = data['string_coord']
+        img_number = data['img_number']
 
         # compute output
         output = model(input)
@@ -65,9 +66,12 @@ def test(val_loader, model, device, save_imgs=False, show=False):
                  fingers=strings_coord.unsqueeze(0), min_dist=5)
 
         if save_imgs:
-            save_img(input.cpu().detach()[0], output1[-1][0][0].cpu().detach().numpy(), 10, data['img_name'][0] + '_fingers')
-            save_img(input.cpu().detach()[0], output2[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_frets')
-            save_img(input.cpu().detach()[0], output3[-1][0][0].cpu().detach().numpy(), 5, data['img_name'][0] + '_strings')
+            save_img(input.cpu().detach()[0], output1[-1][0][0].cpu().detach().numpy(), 10, 'image{num}_fingers'.format(num=data['img_number'][0]))
+            save_img(input.cpu().detach()[0], output2[-1][0][0].cpu().detach().numpy(), 5, 'image{num}_frets'.format(num=data['img_number'][0]))
+            save_img(input.cpu().detach()[0], output3[-1][0][0].cpu().detach().numpy(), 5, 'image{num}_strings'.format(num=data['img_number'][0]))
+
+        if not save_imgs:
+            print(data_idx)
 
         # measure elapsed time
         batch_time.update(time.time() - end)

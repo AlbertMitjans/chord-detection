@@ -98,7 +98,7 @@ class CornersDataset(Dataset):
         strings_grid = strings_grid / strings_grid.max()
 
         sample = {'image': sample['image'], 'fingers': fingers_grid, 'frets': frets_grid, 'strings': strings_grid,
-                  'img_name': img_number, 'finger_coord': sample['finger_coord'], 'fret_coord': sample['fret_coord'], 'string_coord': sample['string_coord']}
+                  'img_number': img_number, 'finger_coord': sample['finger_coord'], 'fret_coord': sample['fret_coord'], 'string_coord': sample['string_coord']}
 
         sample['image'] = pad_to_square(sample['image'])
         sample['fingers'] = pad_to_square(sample['fingers'])

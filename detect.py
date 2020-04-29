@@ -265,7 +265,7 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
     fingers = fingers[fingers[:, 0].argsort()]
     fingers_x_sorted = fingers[fingers[:, 1].argsort()]
 
-    if (fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] < (strings[5][0] + 2)) or np.where(tab == 1)[1][0] == 0:
+    if (fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] < (strings[5][0] + 5)) or np.where(tab == 1)[1][0] == 0:
         # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
         # that fret to 1
         for i in range(6):
@@ -484,7 +484,7 @@ def load_models():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     yolo = Darknet("config/yolov3-custom.cfg", img_size=416).to(device)
-    yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo3.pth', map_location=device))
+    yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo.pth', map_location=device))
     yolo.eval()
 
     model = HourglassNet(Bottleneck)
@@ -493,7 +493,7 @@ def load_models():
     model = nn.DataParallel(model)
     model.to(device)
 
-    checkpoint = torch.load('checkpoints/hg_ckpt_42.pth')
+    checkpoint = torch.load('checkpoints/best_ckpt/hourglass.pth')
 
     model.load_state_dict(checkpoint['model_state_dict'])
 
@@ -550,7 +550,6 @@ if __name__ == "__main__":
                     print(i/6)
 
                     if score == 0:
-
                         print(tab)
 
                         print(
