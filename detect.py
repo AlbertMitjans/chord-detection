@@ -411,7 +411,6 @@ def detect_chord(image, yolo, model_fingers, model_frets, model_strings, device,
             ax[0][1].axis('off')
             ax[1][0].axis('off')
             ax[1][1].axis('off')
-            plt.show()
 
         if not show_plots:
             ax = [[0, 0], [0, 0]]
@@ -571,13 +570,9 @@ if __name__ == "__main__":
                 if int(num) < 2000:
                     image = Image.open(os.path.join(root, file))
 
-                    start = time.time()
-
                     final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model_fingers,
                                                                                         model_frets, model_strings,
                                                                                         device=device, show_plots=False)
-
-                    print('Time is :  ', time.time() - start)
 
                     img_number = int(os.path.basename(file)[5:-4])
 
@@ -593,6 +588,9 @@ if __name__ == "__main__":
                     print(i/6)
 
                     if score == 0:
+                        detect_chord(image, yolo, model_fingers,
+                                     model_frets, model_strings,
+                                     device=device, show_plots=True)
                         print(tab)
 
                         print(
