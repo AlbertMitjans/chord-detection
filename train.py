@@ -29,7 +29,6 @@ def train(ckpt, num_epochs, batch_size, device):
 
     model, train_dataset, val_dataset, criterion_grid, optimizer = init_model_and_dataset(directory, device, lr,
                                                                                           weight_decay)
-
     # load the pretrained network
     if ckpt is not None:
         checkpoint = torch.load(ckpt)
@@ -69,37 +68,50 @@ def train(ckpt, num_epochs, batch_size, device):
         for data_idx, data in enumerate(train_loader):
             batch_start = time.time()
             input = data['image'].float().to(device)
-            target = data['fingers'].float().to(device)
+            fingers = data['fingers'].float().to(device)
             frets = data['frets'].float().to(device)
             strings = data['strings'].float().to(device)
-            target_coord = data['finger_coord']
-            frets_coord = data['fret_coord']
-            strings_coord = data['string_coord']
+            finger_coord = data['finger_coord']
+            fret_coord = data['fret_coord']
+            string_coord = data['string_coord']
 
             # compute output
             output = model(input)
-            output1 = output[0].split(input.shape[0], dim=0)
+            '''output1 = output[0].split(input.shape[0], dim=0)
             output2 = output[1].split(input.shape[0], dim=0)
             output3 = output[2].split(input.shape[0], dim=0)
 
-            loss1 = sum(criterion_grid(o, target) for o in output1)
+            loss1 = sum(criterion_grid(o, fingers) for o in output1)
             loss2 = sum(criterion_grid(o, frets) for o in output2)
             loss3 = sum(criterion_grid(o, strings) for o in output3)
 
             loss = loss1/2 + loss2 + loss3
 
             # measure accuracy and record loss
-            accuracy(output=output1[-1].data, target=target,
-                     global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=target_coord,
+            accuracy(output=output1[-1].data, target=fingers,
+                     global_precision=train_fingers_precision, global_recall=train_fingers_recall, fingers=finger_coord,
                      min_dist=10)
 
             accuracy(output=output2[-1].data, target=frets,
                      global_precision=train_frets_precision, global_recall=train_frets_recall,
-                     fingers=frets_coord.unsqueeze(0), min_dist=5)
+                     fingers=fret_coord.unsqueeze(0), min_dist=5)
 
             accuracy(output=output3[-1].data, target=strings,
                      global_precision=train_strings_precision, global_recall=train_strings_recall,
-                     fingers=strings_coord.unsqueeze(0), min_dist=5)
+                     fingers=string_coord.unsqueeze(0), min_dist=5)
+
+            train_loss.update(loss.item())
+
+            # compute gradient and do SGD step
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()'''
+
+            loss = sum(criterion_grid(o, fingers) for o in output)
+
+            accuracy(output=output.data, target=fingers,
+                     global_precision=train_fingers_precision, global_recall=train_fingers_recall,
+                     fingers=finger_coord, min_dist=5)
 
             train_loss.update(loss.item())
 
@@ -179,6 +191,5 @@ def train(ckpt, num_epochs, batch_size, device):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': train_loss.avg
             }, "checkpoints/hg_ckpt_{0}.pth".format(epoch))
-
 
         print('Epoch time: {time}'.format(time=(time.time() - start_epoch)/60))

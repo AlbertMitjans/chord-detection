@@ -21,4 +21,5 @@ utils/__pycache__/
 Tests/
 output*
 logs/
-hourglass.jpg
+detection.png
+albert*

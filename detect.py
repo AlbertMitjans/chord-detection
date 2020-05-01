@@ -1,5 +1,5 @@
-from models.MTL_stacked_Hourglass import Bottleneck, HourglassNet
-from models.MTL_my_model import MyModel
+from models.stacked_hourglass import Bottleneck, HourglassNet
+from models.my_model import MyModel
 import os
 from PIL import Image
 import torchvision.transforms as transforms
@@ -261,20 +261,24 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
 
             idx += 1
 
-    pos_first_finger = np.where(tab==1)
-    fingers = fingers[fingers[:, 0].argsort()]
-    fingers_x_sorted = fingers[fingers[:, 1].argsort()]
+    if np.max(tab) != 0:
+        pos_first_finger = np.where(tab==1)
+        fingers = fingers[fingers[:, 0].argsort()]
+        fingers_x_sorted = fingers[fingers[:, 1].argsort()]
 
-    if (fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] < (strings[5][0] + 5)) or np.where(tab == 1)[1][0] == 0:
-        # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
-        # that fret to 1
-        for i in range(6):
-            if np.max(tab[:, i]) == 0:
-                tab[pos_first_finger[0][0]][i] = 1
+        if (fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] < (strings[5][0] + 5)) or np.where(tab == 1)[1][0] == 0:
+            # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
+            # that fret to 1
+            for i in range(6):
+                if np.max(tab[:, i]) == 0:
+                    tab[pos_first_finger[0][0]][i] = 1
 
-    tab[np.where(tab != 0)] = 1
+        tab[np.where(tab != 0)] = 1
 
-    tab = tab[:np.max(np.where(tab != 0)[0]) + 2]
+        tab = tab[:np.max(np.where(tab != 0)[0]) + 2]
+
+    if np.max(tab) == 0:
+        tab = None
 
     return tab
 
@@ -296,7 +300,7 @@ def load_tabs():
     return tabs
 
 
-def detect_chord(image, yolo, model, device, show_plots=False):
+def detect_chord(image, yolo, model_fingers, model_frets, model_strings, device, show_plots=False):
     image = transforms.ToTensor()(image).type(torch.float32)[:3]
     yolo_image = rescale(image, (416, 416)).unsqueeze(0).to(device)
     Ry = np.float(image.shape[1])/np.float(yolo_image.shape[2])
@@ -350,7 +354,7 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
         detections = detections[detections[:, 0].argsort()]
 
-        detect = detections[-1][:4] + torch.Tensor([-8, -20, +35, +0])
+        detect = detections[-1][:4] + torch.Tensor([-10, -20, +35, +5])
         detect = torch.Tensor([Rx*detect[0], Ry*detect[1], Rx*detect[2], Ry*detect[3]])
 
         detect = detect.type(torch.int)
@@ -367,28 +371,27 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
         img = cropped_img.unsqueeze(0).to(device)
 
-        output = model(img)
-        output1 = output[0].split(image.shape[0], dim=0)  # fingers
-        output2 = output[1].split(image.shape[0], dim=0)  # frets
-        output3 = output[2].split(image.shape[0], dim=0)  # strings
+        output1 = model_fingers(img)  # fingers
+        output2 = model_frets(img)  # frets
+        output3 = model_strings(img)  # strings
 
-        output_img = output1[-1][0][0] + output2[-1][0][0] + output3[-1][0][0]
+        output_img = output1[0][0] + output2[-1][0][0] + output3[-1][0][0]
 
-        max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.45)
+        max1 = local_max(output1[0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.45)
         if max1.shape[0] == 2:
-            max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.43)
+            max1 = local_max(output1[0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.43)
 
         max1 = max1[max1[:, 0].argsort()]
 
-        max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
+        max2 = local_max(output2[0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
 
         if max2.shape[0] == 2:
             if max2[0][1] - max2[1][1] > 50:
-                max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
+                max2 = local_max(output2[0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
 
         max2 = max2[(-max2)[:, 1].argsort()]
 
-        max3 = local_max(output3[-1][0][0].cpu().detach().numpy(), min_dist=6, t_rel=0.4)
+        max3 = local_max(output3[0][0].cpu().detach().numpy(), min_dist=6, t_rel=0.4)
         max3 = max3[(-max3)[:, 0].argsort()]
 
         # we fill the missing values of the frets and strings
@@ -401,13 +404,14 @@ def detect_chord(image, yolo, model, device, show_plots=False):
             ax[1][1].scatter(max1[:, 1], max1[:, 0], s=3)
             ax[1][1].scatter(frets[:, 1], frets[:, 0], s=3)
             ax[1][1].scatter(strings[:, 1], strings[:, 0], s=3)
-            ax[0][0].imshow(transforms.ToPILImage()(output1[-1][0][0].clamp(0, 1).cpu().detach()))
-            ax[0][1].imshow(transforms.ToPILImage()(output2[-1][0][0].clamp(0, 1).cpu().detach()))
-            ax[1][0].imshow(transforms.ToPILImage()(output3[-1][0][0].clamp(0, 1).cpu().detach()))
+            ax[0][0].imshow(transforms.ToPILImage()(output1[0][0].clamp(0, 1).cpu().detach()))
+            ax[0][1].imshow(transforms.ToPILImage()(output2[0][0].clamp(0, 1).cpu().detach()))
+            ax[1][0].imshow(transforms.ToPILImage()(output3[0][0].clamp(0, 1).cpu().detach()))
             ax[0][0].axis('off')
             ax[0][1].axis('off')
             ax[1][0].axis('off')
             ax[1][1].axis('off')
+            plt.show()
 
         if not show_plots:
             ax = [[0, 0], [0, 0]]
@@ -424,50 +428,58 @@ def detect_chord(image, yolo, model, device, show_plots=False):
             if show_plots:
                 plt.show()
 
-            target_tab = load_tabs()
+            if tab is not None:
 
-            chord_conf = {}
+                target_tab = load_tabs()
 
-            for chord in target_tab:
-                chord_tab = target_tab[chord]
-                tabs = np.zeros((np.max(chord_tab) + 1, 6))
-                for i, fret in enumerate(chord_tab):
-                    if fret != 0:
-                        tabs[fret - 1][i] = 1
+                chord_conf = {}
 
-                loc = np.transpose(np.where(tab != 0))
+                for chord in target_tab:
+                    chord_tab = target_tab[chord]
+                    tabs = np.zeros((np.max(chord_tab) + 1, 6))
+                    for i, fret in enumerate(chord_tab):
+                        if fret != 0:
+                            tabs[fret - 1][i] = 1
 
-                points = 0.
+                    loc = np.transpose(np.where(tab != 0))
 
-                # Penalty for difference in number of fingers
-                points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 2
-                points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 2
+                    points = 0.
 
-                new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
-                new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
+                    # Penalty for difference in number of fingers
+                    points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 2
+                    points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 2
 
-                num_fingers = np.where(tab != 0)[0].shape[0]
-                comparison = new_tab - new_tabs
-                error_tab = np.array(np.where(comparison > 0)).transpose()
-                finger_tabs = np.array(np.where(tabs != 0)).transpose()
+                    new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
+                    new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
 
-                points += 1*(num_fingers-error_tab.shape[0])/loc.shape[0]
+                    num_fingers = np.where(tab != 0)[0].shape[0]
+                    comparison = new_tab - new_tabs
+                    error_tab = np.array(np.where(comparison > 0)).transpose()
+                    finger_tabs = np.array(np.where(tabs != 0)).transpose()
 
-                for (a, b) in error_tab:
-                    dist = np.abs(finger_tabs - np.array([a, b]))
-                    if np.min(dist[:, 0]) == 0:
-                        if np.any(dist[np.where(dist[:, 0] == 0)][:, 1] == 1):
-                            points += 0.3 / loc.shape[0]
+                    points += 1*(num_fingers-error_tab.shape[0])/loc.shape[0]
+
+                    for (a, b) in error_tab:
+                        dist = np.abs(finger_tabs - np.array([a, b]))
+                        if np.min(dist[:, 0]) == 0:
+                            if np.any(dist[np.where(dist[:, 0] == 0)][:, 1] == 1):
+                                points += 0.3 / loc.shape[0]
+                            else:
+                                points -= 0.5 / loc.shape[0]
                         else:
-                            points -= 0.5 / loc.shape[0]
-                    else:
-                        points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
+                            points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
 
-                chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
+                    chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
 
-            final_chord = max(chord_conf, key=chord_conf.get)
-            final_chord_conf = chord_conf[final_chord][0]
-            final_chord = ''.join(i for i in final_chord if not i.isdigit())
+                final_chord = max(chord_conf, key=chord_conf.get)
+                final_chord_conf = chord_conf[final_chord][0]
+                final_chord = ''.join(i for i in final_chord if not i.isdigit())
+
+            if tab is None:
+                final_chord = None
+                final_chord_conf = 0
+                tab = None
+                chord_conf = None
 
     elif detections[0] is None:
         final_chord = None
@@ -487,17 +499,43 @@ def load_models():
     yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo.pth', map_location=device))
     yolo.eval()
 
+    # Fingers model
+
     model = HourglassNet(Bottleneck)
     model2 = MyModel()
     model = nn.Sequential(model, model2)
-    model = nn.DataParallel(model)
-    model.to(device)
+    model_fingers = nn.DataParallel(model)
+    model_fingers.to(device)
 
-    checkpoint = torch.load('checkpoints/best_ckpt/MTL_hourglass.pth')
+    checkpoint = torch.load('checkpoints/best_ckpt/fingers.pth')
 
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model_fingers.load_state_dict(checkpoint['model_state_dict'])
 
-    return yolo, model, device
+    # Frets model
+
+    model = HourglassNet(Bottleneck)
+    model2 = MyModel()
+    model = nn.Sequential(model, model2)
+    model_frets = nn.DataParallel(model)
+    model_frets.to(device)
+
+    checkpoint = torch.load('checkpoints/best_ckpt/frets.pth')
+
+    model_frets.load_state_dict(checkpoint['model_state_dict'])
+
+    # Strings model
+
+    model = HourglassNet(Bottleneck)
+    model2 = MyModel()
+    model = nn.Sequential(model, model2)
+    model_strings = nn.DataParallel(model)
+    model_strings.to(device)
+
+    checkpoint = torch.load('checkpoints/best_ckpt/strings.pth')
+
+    model_strings.load_state_dict(checkpoint['model_state_dict'])
+
+    return yolo, model_fingers, model_frets, model_strings, device
 
 
 if __name__ == "__main__":
@@ -513,7 +551,7 @@ if __name__ == "__main__":
         '''
         return [atoi(c) for c in re.split(r'(\d+)', text)]
 
-    yolo, model, device = load_models()
+    yolo, model_fingers, model_frets, model_strings, device = load_models()
 
     target_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data', 'labels.xlsx'), header=None).values.tolist())
     target_chords = target_chords[np.where(target_chords[:, 0] == '2')][:, 1]
@@ -533,8 +571,13 @@ if __name__ == "__main__":
                 if int(num) < 2000:
                     image = Image.open(os.path.join(root, file))
 
-                    final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model,
+                    start = time.time()
+
+                    final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model_fingers,
+                                                                                        model_frets, model_strings,
                                                                                         device=device, show_plots=False)
+
+                    print('Time is :  ', time.time() - start)
 
                     img_number = int(os.path.basename(file)[5:-4])
 
@@ -558,13 +601,13 @@ if __name__ == "__main__":
                                                                                                   chord2=final_chord,
                                                                                                   perc=final_chord_conf))
 
-                        print(precision.avg)
+                        print('Precision: {prec}%'.format(prec=precision.avg))
 
                         print('---------------------------------------------------------------')
 
                         plt.close('all')
 
-    print(precision.avg)
+    print('Precision: {prec}%'.format(prec=precision.avg))
 
     np.savetxt('predicted_values.txt', predict_values, fmt='%s')
     np.savetxt('true_values.txt', true_values, fmt='%s')
@@ -575,6 +618,6 @@ if __name__ == "__main__":
     df_cm = pd.DataFrame(conf_matrix, index = [i for i in chords], columns= [i for i in chords])
     figure = plt.figure(figsize=(10, 10))
     sn.heatmap(df_cm, annot=True, cbar=False)
-    plt.savefig('hourglass3.jpg')
+    #plt.savefig('hourglass3.jpg')
     plt.show()
 

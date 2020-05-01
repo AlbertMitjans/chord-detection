@@ -10,8 +10,8 @@ from skimage.feature import peak_local_max
 
 from data.dataset import CornersDataset
 from loss.loss import JointsMSELoss
-from models.MTL_stacked_Hourglass import HourglassNet, Bottleneck
-from models.MTL_my_model import MyModel
+from models.stacked_hourglass import HourglassNet, Bottleneck
+from models.my_model import MyModel
 from transforms.rand_crop import RandomCrop
 from transforms.rand_horz_flip import HorizontalFlip
 from transforms.rescale import Rescale
@@ -55,7 +55,7 @@ def init_model_and_dataset(directory, device, lr=5e-6, weight_decay=0):
     criterion = JointsMSELoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr, weight_decay=weight_decay)
 
-    checkpoint = torch.load("checkpoints/best_ckpt/MTL_pretrained.pth", map_location=device)
+    checkpoint = torch.load("checkpoints/best_ckpt/pretrained.pth", map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
