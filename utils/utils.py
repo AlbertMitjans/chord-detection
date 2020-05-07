@@ -10,7 +10,7 @@ from skimage.feature import peak_local_max
 
 from data.dataset import CornersDataset
 from loss.loss import JointsMSELoss
-from models.MTL_stacked_Hourglass import HourglassNet, Bottleneck
+from models.MTL_stacked_hourglass import HourglassNet, Bottleneck
 from models.MTL_my_model import MyModel
 from transforms.rand_crop import RandomCrop
 from transforms.rand_horz_flip import HorizontalFlip

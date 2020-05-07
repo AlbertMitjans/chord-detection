@@ -22,3 +22,4 @@ Tests/
 output*
 logs/
 hourglass.jpg
+video_gpu.py
