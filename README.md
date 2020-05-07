@@ -34,7 +34,9 @@ $ python3 main.py --train False --ckpt checkpoints/best_ckpt/model.pth
 As default, for every image, the input and the output are saved in the *output/* folder.
 
 <p align="center">
-  <img width="900" height="350" src="assets/output.png">
+  <img width="900" height="350" src="assets/output1.png">
+  <img width="900" height="350" src="assets/output2.png">
+  <img width="900" height="350" src="assets/output3.png">
 </p>
 
 **Testing log**
