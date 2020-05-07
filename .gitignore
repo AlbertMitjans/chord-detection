@@ -19,7 +19,7 @@ output/
 transforms/__pycache__/
 utils/__pycache__/
 Tests/
-output*
+output/
 logs/
 hourglass.jpg
 video_gpu.py
