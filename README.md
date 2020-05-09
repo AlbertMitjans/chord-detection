@@ -61,7 +61,6 @@ Epoch: [0][10/172]      Loss.avg: 80.0487       Batch time: 0.4139 s    Total ti
 FINGERS:        Recall(%): 36.364       Precision(%): 68.182
 FRETS:          Recall(%): 2.273        Precision(%): 9.091
 STRINGS:        Recall(%): 0.000        Precision(%): 0.000
----------------------------------------------------------------------------------------------
 ```
 
 **Tensorboard**
