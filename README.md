@@ -28,7 +28,7 @@ $ bash get_weights.sh
 Evaluates the model on the dataset. The network outputs 3 heatmaps with the position of the detected frets, strings and fingers.
 
 ```
-$ python3 main.py --train False --ckpt checkpoints/best_ckpt/model.pth
+$ python3 main.py --train False --ckpt checkpoints/best_ckpt/MTL_hourglass.pth
 ```
 
 As default, for every image, the input and the output are saved in the *output/* folder.
