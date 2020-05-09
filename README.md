@@ -28,21 +28,24 @@ $ bash get_weights.sh
 Evaluates the model on the dataset. The network outputs 3 heatmaps with the position of the detected frets, strings and fingers.
 
 ```
-$ python3 main.py --train False --ckpt checkpoints/best_ckpt/model.pth
+$ python3 main.py --train False --ckpt checkpoints/best_ckpt/MTL_hourglass.pth
 ```
 
 As default, for every image, the input and the output are saved in the *output/* folder.
 
 <p align="center">
-  <img width="900" height="350" src="assets/output.png">
+  <img width="450" height="175" src="assets/output1.png">
+  <img width="450" height="175" src="assets/output2.png">
+  <img width="450" height="175" src="assets/output3.png">
 </p>
 
 **Testing log**
 ```
-* Recall(%): 54.830     * Precision(%):  (97.727, 79.804, 41.202, 14.815)    
+FINGERS:        Recall(%): 89.646       Precision(%): 96.970
+FRETS:          Recall(%): 96.717       Precision(%): 100.000
+STRINGS:        Recall(%): 89.380       Precision(%): 100.000
+   
 ```
-
-The precision is computed for the (1, 2, 3, 4) corners detected with highest confidence (the gaussians with a highest value on its center).
 
 ### Run train
 
@@ -54,29 +57,69 @@ $ python3 main.py
 
 **Training log**
 ```
-Epoch: [5][300/312]	Loss.avg: 0.3615	Recall(%): 21.622	Precision num. corners (%): (22.591, 18.563, 15.833, 16.809)
+Epoch: [0][10/172]      Loss.avg: 80.0487       Batch time: 0.4139 s    Total time: 0.3387 min
+FINGERS:        Recall(%): 36.364       Precision(%): 68.182
+FRETS:          Recall(%): 2.273        Precision(%): 9.091
+STRINGS:        Recall(%): 0.000        Precision(%): 0.000
 ```
 
 **Tensorboard**
 
 Track training progress in Tensorboard:
 + Initialize training
-+ Run the command below inside the pytorch-corner-detection directory.
++ Run the command below inside the chord-detection directory.
 + Go to [http://localhost:6006/](http://localhost:6006/)
 
 ```
 $ tensorboard --logdir='logs' --port=6006
 ```
 
+### Arguments
+--train (default:True) : if True/False, training/testing is implemented.  
+--val_data (default:True) : if True/False, all/validation data will be evaluated.  
+--save_imgs (default:True) : if True output images will be saved in the \Output folder.  
+--batch_size (default:1)  
+--depth (default:True) : if True/False, depth/RGB images will be used.  
+--ckpt(default:None)  
+--num_epochs (default:200)  
+
 ## Chord detection
 
-### Image
+### Image detection
 
-Detects the chords in 92 of the images of the dataset.
+Detects the chords played in all the images of the dataset.
 
 ```
-$ python3 detect.py
+$ python3 detect.py --print_tab True --plot_imgs True
 ```
+
+<p align="center">
+  <img width="450" height="175" src="assets/plot1.png">
+  <img width="450" height="175" src="assets/plot2.png">
+  <img width="450" height="175" src="assets/plot3.png">
+</p>
+
+**Image detection log**
+```
+image1.jpg:
+
+Tablature:
+
+[[0. 0. 0. 0. 1. 0.]
+ [0. 0. 1. 0. 0. 0.]
+ [0. 1. 0. 0. 0. 0.]
+ [0. 0. 0. 0. 0. 0.]]
+
+Target: C  ,  Prediction: C (100%)
+
+Detection precision: 100.0%
+```
+
+#### Arguments
+--folder (default:2) : choose image folder for the detection. The dataset contains three different folders (0, 1 or 2).
+--print_tab (default:False) : prints the tablature obtained from the detection.
+--plot_imgs (default:False) : plots images of the detection process. 
+--conf_matrix (default:False) : creates and saves a confusion matrix of the detection of all the images.
 
 ### Video
 
