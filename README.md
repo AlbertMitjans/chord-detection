@@ -41,7 +41,10 @@ As default, for every image, the input and the output are saved in the *output/*
 
 **Testing log**
 ```
-* Recall(%): 54.830     * Precision(%):  (97.727, 79.804, 41.202, 14.815)    
+FINGERS:        Recall(%): 89.646       Precision(%): 96.970
+FRETS:          Recall(%): 96.717       Precision(%): 100.000
+STRINGS:        Recall(%): 89.380       Precision(%): 100.000
+   
 ```
 
 The precision is computed for the (1, 2, 3, 4) corners detected with highest confidence (the gaussians with a highest value on its center).
