@@ -129,6 +129,10 @@ Detects the chords of every frame of a video of the dataset and saves the result
 $ python3 video.py --vid_number 1 --show_animation True
 ```
 
+<p align="center">
+  <img width="500" height="300" src="assets/video.PNG">
+</p>
+
 #### Arguments
 --vid_number (default:1) : number of the video to use for the detection. The dataset contains up to 21 different videos.
 --show_animation (default:True) : plots the saved frames during the detection process.
