@@ -29,36 +29,46 @@ def test(val_loader, model, device, save_imgs=False, show=False):
 
     for data_idx, data in enumerate(val_loader):
         input = data['image'].float().to(device)
-        fingers = data['fingers'].float().to(device)
+        target = data['fingers'].float().to(device)
         frets = data['frets'].float().to(device)
         strings = data['strings'].float().to(device)
-        finger_coord = data['finger_coord']
+        target_coord = data['finger_coord']
         frets_coord = data['fret_coord']
         strings_coord = data['string_coord']
         img_number = data['img_number']
 
         # compute output
         output = model(input)
-        '''output1 = output[0].split(input.shape[0], dim=0)
+        output1 = output[0].split(input.shape[0], dim=0)
         output2 = output[1].split(input.shape[0], dim=0)
-        output3 = output[2].split(input.shape[0], dim=0)'''
+        output3 = output[2].split(input.shape[0], dim=0)
 
         if show:
             import matplotlib.pyplot as plt
             import torchvision.transforms as transforms
             fig, ax = plt.subplots(1, 3)
-            ax[0].imshow(fingers[0][0].cpu(), cmap='gray')
-            ax[1].imshow(output[0][0].cpu().detach(), cmap='gray')
+            ax[0].imshow(target[0][0].cpu(), cmap='gray')
+            ax[1].imshow(output1[-1][0][0].cpu().detach(), cmap='gray')
             ax[2].imshow(transforms.ToPILImage()(input.cpu()[0]))
             plt.show()
 
         # measure accuracy
-        accuracy(output=output.data, target=fingers,
-                 global_precision=eval_fingers_precision, global_recall=eval_fingers_recall, fingers=finger_coord,
-                 min_dist= 5)
+        accuracy(output=output1[-1].data, target=target,
+                 global_precision=eval_fingers_precision, global_recall=eval_fingers_recall, fingers=target_coord,
+                 min_dist= 10)
+
+        accuracy(output=output2[-1].data, target=frets,
+                 global_precision=eval_frets_precision, global_recall=eval_frets_recall,
+                 fingers=frets_coord.unsqueeze(0), min_dist=5)
+
+        accuracy(output=output3[-1].data, target=strings,
+                 global_precision=eval_strings_precision, global_recall=eval_strings_recall,
+                 fingers=strings_coord.unsqueeze(0), min_dist=5)
 
         if save_imgs:
-            save_img(input.cpu().detach()[0], output[0][0].cpu().detach().numpy(), 10, 'image{num}_fingers'.format(num=data['img_number'][0]))
+            save_img(input.cpu().detach()[0], output1[-1][0][0].cpu().detach().numpy(), 10, 'image{num}_fingers'.format(num=data['img_number'][0]))
+            save_img(input.cpu().detach()[0], output2[-1][0][0].cpu().detach().numpy(), 5, 'image{num}_frets'.format(num=data['img_number'][0]))
+            save_img(input.cpu().detach()[0], output3[-1][0][0].cpu().detach().numpy(), 5, 'image{num}_strings'.format(num=data['img_number'][0]))
 
         # measure elapsed time
         batch_time.update(time.time() - end)

@@ -300,7 +300,7 @@ def load_tabs():
     return tabs
 
 
-def detect_chord(image, yolo, model_fingers, model_frets, model_strings, device, show_plots=False):
+def detect_chord(image, yolo, model, device, show_plots=False):
     image = transforms.ToTensor()(image).type(torch.float32)[:3]
     yolo_image = rescale(image, (416, 416)).unsqueeze(0).to(device)
     Ry = np.float(image.shape[1])/np.float(yolo_image.shape[2])
@@ -335,7 +335,6 @@ def detect_chord(image, yolo, model_fingers, model_frets, model_strings, device,
             n_cls_preds = len(unique_labels)
             bbox_colors = random.sample(colors, n_cls_preds)
             for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-                print("\t+ Label: %s, Conf: %.5f" % ('Hand', cls_conf.item()))
 
                 box_w = x2 - x1
                 box_h = y2 - y1
@@ -371,27 +370,28 @@ def detect_chord(image, yolo, model_fingers, model_frets, model_strings, device,
 
         img = cropped_img.unsqueeze(0).to(device)
 
-        output1 = model_fingers(img)  # fingers
-        output2 = model_frets(img)  # frets
-        output3 = model_strings(img)  # strings
+        output = model(img)
+        output1 = output[0]  # fingers
+        output2 = output[1]  # frets
+        output3 = output[2]  # strings
 
-        output_img = output1[0][0] + output2[-1][0][0] + output3[-1][0][0]
+        output_img = output1[-1][0] + output2[-1][0] + output3[-1][0]
 
-        max1 = local_max(output1[0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.45)
+        max1 = local_max(output1[-1][0].cpu().detach().numpy(), min_dist=5, t_rel=0.45)
         if max1.shape[0] == 2:
-            max1 = local_max(output1[0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.43)
+            max1 = local_max(output1[-1][0].cpu().detach().numpy(), min_dist=5, t_rel=0.43)
 
         max1 = max1[max1[:, 0].argsort()]
 
-        max2 = local_max(output2[0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
+        max2 = local_max(output2[-1][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
 
         if max2.shape[0] == 2:
             if max2[0][1] - max2[1][1] > 50:
-                max2 = local_max(output2[0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
+                max2 = local_max(output2[-1][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
 
         max2 = max2[(-max2)[:, 1].argsort()]
 
-        max3 = local_max(output3[0][0].cpu().detach().numpy(), min_dist=6, t_rel=0.4)
+        max3 = local_max(output3[-1][0].cpu().detach().numpy(), min_dist=6, t_rel=0.4)
         max3 = max3[(-max3)[:, 0].argsort()]
 
         # we fill the missing values of the frets and strings
@@ -404,9 +404,9 @@ def detect_chord(image, yolo, model_fingers, model_frets, model_strings, device,
             ax[1][1].scatter(max1[:, 1], max1[:, 0], s=3)
             ax[1][1].scatter(frets[:, 1], frets[:, 0], s=3)
             ax[1][1].scatter(strings[:, 1], strings[:, 0], s=3)
-            ax[0][0].imshow(transforms.ToPILImage()(output1[0][0].clamp(0, 1).cpu().detach()))
-            ax[0][1].imshow(transforms.ToPILImage()(output2[0][0].clamp(0, 1).cpu().detach()))
-            ax[1][0].imshow(transforms.ToPILImage()(output3[0][0].clamp(0, 1).cpu().detach()))
+            ax[0][0].imshow(transforms.ToPILImage()(output1[-1][0].clamp(0, 1).cpu().detach()))
+            ax[0][1].imshow(transforms.ToPILImage()(output2[-1][0].clamp(0, 1).cpu().detach()))
+            ax[1][0].imshow(transforms.ToPILImage()(output3[-1][0].clamp(0, 1).cpu().detach()))
             ax[0][0].axis('off')
             ax[0][1].axis('off')
             ax[1][0].axis('off')
@@ -499,43 +499,17 @@ def load_models():
     yolo.load_state_dict(torch.load('checkpoints/best_ckpt/yolo.pth', map_location=device))
     yolo.eval()
 
-    # Fingers model
-
     model = HourglassNet(Bottleneck)
     model2 = MyModel()
     model = nn.Sequential(model, model2)
-    model_fingers = nn.DataParallel(model)
-    model_fingers.to(device)
+    model = nn.DataParallel(model)
+    model.to(device)
 
-    checkpoint = torch.load('checkpoints/best_ckpt/fingers.pth')
+    checkpoint = torch.load('checkpoints/best_ckpt/MTL_hourglass.pth')
 
-    model_fingers.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint['model_state_dict'])
 
-    # Frets model
-
-    model = HourglassNet(Bottleneck)
-    model2 = MyModel()
-    model = nn.Sequential(model, model2)
-    model_frets = nn.DataParallel(model)
-    model_frets.to(device)
-
-    checkpoint = torch.load('checkpoints/best_ckpt/frets.pth')
-
-    model_frets.load_state_dict(checkpoint['model_state_dict'])
-
-    # Strings model
-
-    model = HourglassNet(Bottleneck)
-    model2 = MyModel()
-    model = nn.Sequential(model, model2)
-    model_strings = nn.DataParallel(model)
-    model_strings.to(device)
-
-    checkpoint = torch.load('checkpoints/best_ckpt/strings.pth')
-
-    model_strings.load_state_dict(checkpoint['model_state_dict'])
-
-    return yolo, model_fingers, model_frets, model_strings, device
+    return yolo, model, device
 
 
 if __name__ == "__main__":
@@ -552,7 +526,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--folder", type=str, default='2', help="image folder (0, 1, 2)")
-    parser.add_argument("--show_plots", type=str2bool, default=False, help="show plots of the detection")
+    parser.add_argument("--print_tab", type=str2bool, default=True, help="prints the tablature obtained from the detection")
+    parser.add_argument("--plot_imgs", type=str2bool, default=True, help="plots images of the detection")
     parser.add_argument("--conf_matrix", type=str2bool, default=False, help="create and save confusion matrix")
 
     opt = parser.parse_args()
@@ -569,7 +544,7 @@ if __name__ == "__main__":
         '''
         return [atoi(c) for c in re.split(r'(\d+)', text)]
 
-    yolo, model_fingers, model_frets, model_strings, device = load_models()
+    yolo, model, device = load_models()
 
     target_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data', 'labels.xlsx'), header=None).values.tolist())
     target_chords = target_chords[np.where(target_chords[:, 0] == opt.folder)][:, 1]
@@ -581,6 +556,8 @@ if __name__ == "__main__":
     true_values = []
     predict_values = []
 
+    print('---------------------------------------------------------------')
+
     for root, dirs, files in os.walk(directory):
         files.sort(key=natural_keys)
         for i, file in enumerate(files):
@@ -591,7 +568,7 @@ if __name__ == "__main__":
 
                     final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model,
                                                                                         device=device,
-                                                                                        show_plots=opt.show_plots)
+                                                                                        show_plots=opt.plot_imgs)
 
                     img_number = int(os.path.basename(file)[5:-4])
 
@@ -605,14 +582,18 @@ if __name__ == "__main__":
 
                     predict_values.append(final_chord)
 
-                    print(tab)
+                    print('{file}: \n'.format(file=file))
 
-                    print('{file}:   Target: {chord}  ,  Prediction: {chord2} ({perc}%)'.format(file=file,
-                                                                                                chord=target_chord,
-                                                                                                chord2=final_chord,
-                                                                                                perc=final_chord_conf))
+                    print('Tablature: \n')
 
-                    print(precision.avg)
+                    print(tab, '\n')
+
+                    print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
+                                                                                      chord2=final_chord,
+                                                                                      perc=final_chord_conf))
+
+
+                    print('Detection precision: {precision}%'.format(precision=precision.avg*100))
 
                     print('---------------------------------------------------------------')
 
