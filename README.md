@@ -93,6 +93,12 @@ Detects the chords played in all the images of the dataset.
 $ python3 detect.py --print_tab True --plot_imgs True
 ```
 
+<p align="center">
+  <img width="450" height="175" src="assets/plot1.png">
+  <img width="450" height="175" src="assets/plot2.png">
+  <img width="450" height="175" src="assets/plot3.png">
+</p>
+
 **Image detection log**
 ```
 image1.jpg:
