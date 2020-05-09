@@ -90,19 +90,28 @@ $ tensorboard --logdir='logs' --port=6006
 Detects the chords played in all the images of the dataset.
 
 ```
-$ python3 detect.py
+$ python3 detect.py --print_tab True --plot_imgs True
 ```
 
 **Image detection log**
 ```
-Epoch: [0][10/172]      Loss.avg: 80.0487       Batch time: 0.4139 s    Total time: 0.3387 min
-FINGERS:        Recall(%): 36.364       Precision(%): 68.182
-FRETS:          Recall(%): 2.273        Precision(%): 9.091
-STRINGS:        Recall(%): 0.000        Precision(%): 0.000
+image1.jpg:
+
+Tablature:
+
+[[0. 0. 0. 0. 1. 0.]
+ [0. 0. 1. 0. 0. 0.]
+ [0. 1. 0. 0. 0. 0.]
+ [0. 0. 0. 0. 0. 0.]]
+
+Target: C  ,  Prediction: C (100%)
+
+Detection precision: 100.0%
 ```
 
 #### Arguments
 --folder (default:2) : choose image folder for the detection. The dataset contains three different folders (0, 1 or 2).
+--print_tab (default:False) : prints the tablature obtained from the detection.
 --plot_imgs (default:False) : plots images of the detection process. 
 --conf_matrix (default:False) : creates and saves a confusion matrix of the detection of all the images.
 
