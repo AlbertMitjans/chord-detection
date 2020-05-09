@@ -18,7 +18,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--vid_number", type=int, default=1, help="Video number")
-parser.add_argument("--show_animation", type=str2bool, default=False, help="show animation while processing video")
+parser.add_argument("--show_animation", type=str2bool, default=True, help="show animation while processing video")
 
 opt = parser.parse_args()
 
