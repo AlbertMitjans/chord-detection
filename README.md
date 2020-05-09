@@ -96,7 +96,6 @@ $ python3 detect.py --print_tab True --plot_imgs True
 <p align="center">
   <img width="250" height="200" src="assets/plot1.png">
   <img width="250" height="200" src="assets/plot2.png">
-  <img width="250" height="200" src="assets/plot3.png">
 </p>
 
 **Image detection log**
