@@ -123,8 +123,13 @@ Detection precision: 100.0%
 
 ### Video
 
-Detects the chords of the video of the dataset.
+Detects the chords of every frame of a video of the dataset and saves the results as a new video.
 
 ```
-$ python3 video.py
+$ python3 video.py --vid_number 1 --show_animation True
 ```
+
+#### Arguments
+--vid_number (default:1) : number of the video to use for the detection. The dataset contains up to 21 different videos.
+--show_animation (default:True) : plots the saved frames during the detection process.
+
