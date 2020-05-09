@@ -47,8 +47,6 @@ STRINGS:        Recall(%): 89.380       Precision(%): 100.000
    
 ```
 
-The precision is computed for the (1, 2, 3, 4) corners detected with highest confidence (the gaussians with a highest value on its center).
-
 ### Run train
 
 Trains the network from scratch or from a given checkpoint.
