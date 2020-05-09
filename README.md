@@ -93,14 +93,18 @@ Detects the chords played in all the images of the dataset.
 $ python3 detect.py
 ```
 
+**Image detection log**
+```
+Epoch: [0][10/172]      Loss.avg: 80.0487       Batch time: 0.4139 s    Total time: 0.3387 min
+FINGERS:        Recall(%): 36.364       Precision(%): 68.182
+FRETS:          Recall(%): 2.273        Precision(%): 9.091
+STRINGS:        Recall(%): 0.000        Precision(%): 0.000
+```
+
 #### Arguments
---train (default:True) : if True/False, training/testing is implemented.  
---val_data (default:True) : if True/False, all/validation data will be evaluated.  
---save_imgs (default:True) : if True output images will be saved in the \Output folder.  
---batch_size (default:1)  
---depth (default:True) : if True/False, depth/RGB images will be used.  
---ckpt(default:None)  
---num_epochs (default:200)  
+--folder (default:2) : choose image folder for the detection. The dataset contains three different folders (0, 1 or 2).
+--plot_imgs (default:False) : plots images of the detection process. 
+--conf_matrix (default:False) : creates and saves a confusion matrix of the detection of all the images.
 
 ### Video
 
