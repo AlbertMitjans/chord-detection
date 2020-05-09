@@ -67,7 +67,7 @@ STRINGS:        Recall(%): 0.000        Precision(%): 0.000
 
 Track training progress in Tensorboard:
 + Initialize training
-+ Run the command below inside the pytorch-corner-detection directory.
++ Run the command below inside the chord-detection directory.
 + Go to [http://localhost:6006/](http://localhost:6006/)
 
 ```
