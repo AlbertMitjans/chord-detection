@@ -57,7 +57,11 @@ $ python3 main.py
 
 **Training log**
 ```
-Epoch: [5][300/312]	Loss.avg: 0.3615	Recall(%): 21.622	Precision num. corners (%): (22.591, 18.563, 15.833, 16.809)
+Epoch: [0][10/172]      Loss.avg: 80.0487       Batch time: 0.4139 s    Total time: 0.3387 min
+FINGERS:        Recall(%): 36.364       Precision(%): 68.182
+FRETS:          Recall(%): 2.273        Precision(%): 9.091
+STRINGS:        Recall(%): 0.000        Precision(%): 0.000
+---------------------------------------------------------------------------------------------
 ```
 
 **Tensorboard**
