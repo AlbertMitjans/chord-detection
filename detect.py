@@ -526,8 +526,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--folder", type=str, default='2', help="image folder (0, 1, 2)")
-    parser.add_argument("--print_tab", type=str2bool, default=True, help="prints the tablature obtained from the detection")
-    parser.add_argument("--plot_imgs", type=str2bool, default=True, help="plots images of the detection")
+    parser.add_argument("--print_tab", type=str2bool, default=False, help="prints the tablature obtained from the detection")
+    parser.add_argument("--plot_imgs", type=str2bool, default=False, help="plots images of the detection")
     parser.add_argument("--conf_matrix", type=str2bool, default=False, help="create and save confusion matrix")
 
     opt = parser.parse_args()
@@ -584,9 +584,11 @@ if __name__ == "__main__":
 
                     print('{file}: \n'.format(file=file))
 
-                    print('Tablature: \n')
+                    if opt.print_tab:
 
-                    print(tab, '\n')
+                        print('Tablature: \n')
+
+                        print(tab, '\n')
 
                     print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
                                                                                       chord2=final_chord,
