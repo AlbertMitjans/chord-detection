@@ -1,7 +1,7 @@
 # Chord detection
 This repo contains the code structure for the detection of guitar chords from input images.
 
-## Installation
+## Installation (Linux)
 
 **Create conda environment**
 ```
