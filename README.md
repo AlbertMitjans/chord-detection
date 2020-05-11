@@ -60,10 +60,10 @@ $ python3 main.py
 
 **Training log**
 ```
-Epoch: [0][10/172]      Loss.avg: 80.0487       Batch time: 0.4139 s    Total time: 0.3387 min
-FINGERS:        Recall(%): 36.364       Precision(%): 68.182
-FRETS:          Recall(%): 2.273        Precision(%): 9.091
-STRINGS:        Recall(%): 0.000        Precision(%): 0.000
+Epoch: [0][10/172]      Loss.avg: 96.6020       Batch time: 0.4998 s    Total time: 0.3796 min
+FINGERS:        Recall(%): 50.758       Precision(%): 95.455
+FRETS:          Recall(%): 3.636        Precision(%): 0.308
+STRINGS:        Recall(%): 1.515        Precision(%): 0.088
 ```
 
 **Tensorboard**
