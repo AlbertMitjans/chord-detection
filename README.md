@@ -7,6 +7,9 @@ This repo contains the code structure for the detection of guitar chords from in
 ```
 $ conda create -n ENVIRONMENT_NAME python=3
 $ conda activate ENVIRONMENT_NAME
+$ conda config --add channels conda-forge
+$ conda config --add channels pytorch
+$ conda config --set channel_priority strict
 ```
 
 **Clona and install requirements**
