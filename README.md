@@ -49,7 +49,7 @@ STRINGS:        Recall(%): 89.380       Precision(%): 100.000
 
 ### Run train
 
-Trains the network from scratch or from a given checkpoint.
+Trains the pre-trained network from scratch or from a given checkpoint.
 
 ```
 $ python3 main.py
