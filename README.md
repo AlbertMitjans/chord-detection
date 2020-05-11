@@ -23,6 +23,12 @@ $ conda install --file requirements.txt
 $ cd checkpoints/
 $ bash get_weights.sh
 ```
+**Download dataset**
+```
+$ cd ..
+$ cd data/
+$ bash get_dataset.sh
+```
 
 ## Hourglass network
 
