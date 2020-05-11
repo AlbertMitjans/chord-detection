@@ -1,8 +1,8 @@
 torchvision
 pytorch
-pillow==6.2.2
+pillow==6.1.0
 matplotlib
 opencv
 pandas
-tensorflow==1.15.2
+tensorflow==1.13.1
 scikit-image
