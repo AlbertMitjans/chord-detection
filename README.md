@@ -49,7 +49,7 @@ STRINGS:        Recall(%): 89.380       Precision(%): 100.000
 
 ### Run train
 
-Trains the network from scratch or from a given checkpoint.
+Trains the pre-trained network from scratch or from a given checkpoint.
 
 ```
 $ python3 main.py
@@ -116,10 +116,10 @@ Detection precision: 100.0%
 ```
 
 #### Arguments
---folder (default:2) : choose image folder for the detection. The dataset contains three different folders (0, 1 or 2).
---print_tab (default:False) : prints the tablature obtained from the detection.
---plot_imgs (default:False) : plots images of the detection process. 
---conf_matrix (default:False) : creates and saves a confusion matrix of the detection of all the images.
+--folder (default:2) : choose image folder for the detection. The dataset contains three different folders (0, 1 or 2).  
+--print_tab (default:False) : prints the tablature obtained from the detection.  
+--plot_imgs (default:False) : plots images of the detection process.  
+--conf_matrix (default:False) : creates and saves a confusion matrix of the detection of all the images.  
 
 ### Video
 
@@ -129,7 +129,13 @@ Detects the chords of every frame of a video of the dataset and saves the result
 $ python3 video.py --vid_number 1 --show_animation True
 ```
 
+<p align="center">
+  <img width="500" height="300" src="assets/video.PNG">
+</p>
+
 #### Arguments
---vid_number (default:1) : number of the video to use for the detection. The dataset contains up to 21 different videos.
+--vid_number (default:1) : number of the video to use for the detection. The dataset contains up to 21 different videos.  
 --show_animation (default:True) : plots the saved frames during the detection process.
+
+
 
