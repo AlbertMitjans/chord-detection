@@ -26,7 +26,7 @@ def main(train_flag, evaluate_val, save_imgs, ckpt, num_epochs, batch_size):
 
         # load the pretrained network
         if ckpt is not None:
-            checkpoint = torch.load(ckpt)
+            checkpoint = torch.load(ckpt, map_location=device)
 
             model.load_state_dict(checkpoint['model_state_dict'])
 
