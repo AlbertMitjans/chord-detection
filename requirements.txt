@@ -11,3 +11,4 @@ xlrd
 scikit-learn
 seaborn
 tqdm
+gdown
