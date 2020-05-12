@@ -4,6 +4,8 @@ mkdir best_ckpt
 
 mv ckpts.zip best_ckpt/ckpts.zip
 
+cd best_ckpt
+
 unzip ckpts.zip
 
 rm ckpts.zip
