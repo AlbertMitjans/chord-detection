@@ -9,6 +9,7 @@ $ conda create -n ENVIRONMENT_NAME python=3
 $ conda activate ENVIRONMENT_NAME
 $ conda config --add channels conda-forge
 $ conda config --add channels pytorch
+$ conda config --add channels bioconda
 $ conda config --set channel_priority strict
 ```
 
