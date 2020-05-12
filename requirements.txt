@@ -7,3 +7,7 @@ pandas
 tensorflow==1.13.1
 scikit-image
 p7zip
+xlrd
+scikit-learn
+seaborn
+tqdm

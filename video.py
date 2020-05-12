@@ -28,6 +28,19 @@ white_image = Image.fromarray(np.full((230, 620), 255, dtype=np.uint8))
 
 num_video = opt.vid_number
 
+# Set up formatting for the movie files
+
+directory = os.getcwd()
+
+vid = cv2.VideoCapture()
+vid.open(os.path.join(directory, 'data/videos/video{num}.mov'.format(num=num_video)))
+
+# Define the codec and create VideoWriter Object
+fourcc = cv2.VideoWriter_fourcc('m', 'p','4','v')
+video = cv2.VideoWriter('data/videos/video{num}_output.mov'.format(num=num_video), fourcc, 30, (1920, 1080), True)
+
+cuda = torch.cuda.is_available()
+
 
 def update(i):
     global average_detection, detection, current_chord
@@ -35,7 +48,8 @@ def update(i):
 
     if ret is False:
         video.release()
-        ani.event_source.stop()
+        if cuda:
+            ani.event_source.stop()
         plt.close('all')
 
     elif ret is True:
@@ -58,12 +72,12 @@ def update(i):
 
             # we convert the images to uint8
             cropped_img = cropped_img.numpy()
-            cropped_img = (cropped_img - cropped_img.min())/(cropped_img.max() - cropped_img.min())
-            cropped_img = (cropped_img*255).astype(np.uint8).transpose((1, 2, 0))
+            cropped_img = (cropped_img - cropped_img.min()) / (cropped_img.max() - cropped_img.min())
+            cropped_img = (cropped_img * 255).astype(np.uint8).transpose((1, 2, 0))
             cropped_img = Image.fromarray(cropped_img)
             output_img = output_img.cpu().detach().numpy()
-            output_img = (output_img - output_img.min())/(output_img.max() - output_img.min())
-            output_img = (output_img*255).astype(np.uint8)
+            output_img = (output_img - output_img.min()) / (output_img.max() - output_img.min())
+            output_img = (output_img * 255).astype(np.uint8)
             output_img = Image.fromarray(output_img)
 
             c = np.max(detection)
@@ -87,46 +101,41 @@ def update(i):
 
             frame = np.array(frame)
 
-            im.set_data(frame)
+            if cuda:
+                im.set_data(frame)
 
             video.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
-
             print('Frame: {i} \t Detection: {final_chord} \t Confidence: {conf}% '.format(i=i,
-                                                                                            final_chord=final_chord,
-                                                                                            conf=final_chord_conf))
+                                                                                          final_chord=final_chord,
+                                                                                          conf=final_chord_conf))
 
+if cuda:
+    ret, frame = vid.read()
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-# Set up formatting for the movie files
+    average_detection = [AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(),
+                         AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(),
+                         AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(),
+                         AverageMeter(), AverageMeter(), AverageMeter()]
+    detection = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    vid_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data/videos',
+                                                     'video{num}_labels.xlsx'.format(num=num_video)),
+                                        header=None).values.tolist())
+    current_chord = vid_chords[0][1]
 
-directory = os.getcwd()
+    # Create plot
+    fig, ax = plt.subplots(1, 1)
+    ax.axis('off')
+    ax.set_title('Video')
+    im = ax.imshow(frame)
 
-vid = cv2.VideoCapture()
-vid.open(os.path.join(directory, 'data/videos/video{num}.mov'.format(num=num_video)))
+    ani = FuncAnimation(fig, update, interval=1000/30, cache_frame_data=False)
 
-ret, frame = vid.read()
-frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    plt.show()
 
-average_detection = [AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(),
-                     AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(),
-                     AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(),
-                     AverageMeter(), AverageMeter(), AverageMeter()]
-detection = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-vid_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data/videos',
-                                                 'video{num}_labels.xlsx'.format(num=num_video)),
-                                    header=None).values.tolist())
-current_chord = vid_chords[0][1]
+if not cuda:
+    num_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
 
-# Create plot
-fig, ax = plt.subplots(1, 1)
-ax.axis('off')
-ax.set_title('Video')
-im = ax.imshow(frame)
-
-# Define the codec and create VideoWriter Object
-fourcc = cv2.VideoWriter_fourcc('m', 'p','4','v')
-video = cv2.VideoWriter('data/videos/video{num}_output.mov'.format(num=num_video), fourcc, 30, (1920, 1080), True)
-
-ani = FuncAnimation(fig, update, interval=1000/30, cache_frame_data=False)
-
-plt.show()
+    for i in range(num_frames):
+        update(i)

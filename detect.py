@@ -13,6 +13,8 @@ from transforms.pad_to_square import pad_to_square
 import random
 import re
 import argparse
+from sklearn.metrics import confusion_matrix
+import seaborn as sn
 
 
 def fill_values(frets, strings):
@@ -505,7 +507,7 @@ def load_models():
     model = nn.DataParallel(model)
     model.to(device)
 
-    checkpoint = torch.load('checkpoints/best_ckpt/MTL_hourglass.pth')
+    checkpoint = torch.load('checkpoints/best_ckpt/MTL_hourglass.pth', map_location=device)
 
     model.load_state_dict(checkpoint['model_state_dict'])
 
@@ -602,8 +604,6 @@ if __name__ == "__main__":
                     plt.close('all')
 
     if opt.conf_matrix:
-        from sklearn.metrics import confusion_matrix
-        import seaborn as sn
         chords = ['C', 'Cm', 'D', 'Dm', 'E', 'Em', 'F', 'Fm', 'G', 'Gm', 'A', 'Am', 'B', 'Bm']
         conf_matrix = confusion_matrix(true_values, predict_values, labels=chords)
         df_cm = pd.DataFrame(conf_matrix, index = [i for i in chords], columns= [i for i in chords])
