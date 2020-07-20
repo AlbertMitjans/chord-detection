@@ -73,7 +73,8 @@ def update(i):
 
             frame = np.array(frame)
 
-            im.set_data(frame)
+            if opt.show_animation:
+                im.set_data(frame)
 
             video.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
@@ -84,7 +85,8 @@ def update(i):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--vid_number", type=int, default=1, help="Video number")
-parser.add_argument("--show_animation", type=str2bool, default=True, help="show animation while processing video")
+parser.add_argument("--show_animation", type=str2bool, default=True, help="Show animation while processing video")
+parser.add_argument("--path", type=str, default="C:\\Users\\Albert\\Desktop", help="Path to video")
 
 opt = parser.parse_args()
 
@@ -99,11 +101,11 @@ num_video = opt.vid_number
 directory = os.getcwd()
 
 vid = cv2.VideoCapture()
-vid.open(os.path.join(directory, 'data/videos/video{num}.mov'.format(num=num_video)))
+vid.open(os.path.join(opt.path, 'video{num}.mov'.format(num=num_video)))
 
 # Define the codec and create VideoWriter Object
 fourcc = cv2.VideoWriter_fourcc('m', 'p','4','v')
-video = cv2.VideoWriter('data/videos/video{num}_output.mov'.format(num=num_video), fourcc, 30, (1920, 1080), True)
+video = cv2.VideoWriter(os.path.join(opt.path, 'video{num}_output.mov'.format(num=num_video)), fourcc, 30, (1920, 1080), True)
 
 ret, frame = vid.read()
 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

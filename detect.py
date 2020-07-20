@@ -17,14 +17,32 @@ import seaborn as sn
 import argparse
 
 
+def perp(a):
+    b = np.empty_like(a)
+    b[0] = -a[1]
+    b[1] = a[0]
+    return b
+
+# line segment a given by endpoints a1, a2
+# line segment b given by endpoints b1, b2
+def seg_intersect(a1, a2, b1, b2):
+    da = a2 - a1
+    db = b2 - b1
+    dp = a1 - b1
+    dap = perp(da)
+    denom = np.dot(dap, db)
+    num = np.dot(dap, dp)
+    return (num / denom.astype(float)) * db + b1
+
+
 def fill_values(frets, strings):
 
     # We delete the bad values
     if strings.shape[0] > 1 and frets.shape[0] > 1:
 
         # We delete bad values of strings
-        deviation = np.abs(frets[0, 1] - strings[:, 1])
-        strings = strings[np.where(deviation <= np.min(deviation) + 15)]
+        x_value = max(set(strings[:, 1]), key=list(strings[:, 1]).count)
+        strings = strings[np.logical_and(x_value - 5 <= strings[:, 1], strings[:, 1] <= x_value + 5)]
 
         # We compute the vectors of the strings
 
@@ -88,8 +106,11 @@ def fill_values(frets, strings):
             frets = []
 
             for val in frets_all:
-                if val[1] < np.min(strings, axis=0)[1]:
+                if np.all(val <= np.min(strings + [10, 0], axis=0)):
                     frets.append(val)
+
+            if frets.__len__() != 0:
+                frets.insert(0, seg_intersect(strings[0], strings[-1], frets[0], frets[0] + perp(strings[0] - strings[-1])))
 
             frets = np.array(frets)
 
@@ -186,6 +207,10 @@ def fill_values(frets, strings):
                     if first_string[0] < 300 and first_string[1] < 300:
                         strings = np.append(strings, [first_string], axis=0)
 
+                if strings.shape[0] <= 1 and frets.shape[0] <= 1:
+                    v1_mean = None
+                    v2_mean = None
+
     else:
         v1_mean = None
         v2_mean = None
@@ -199,24 +224,6 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
     frets = frets[(-frets)[:, 1].argsort()]
     strings = strings[(-strings)[:, 0].argsort()]
     fingers = fingers[(-fingers)[:, 1].argsort()]
-
-    def perp(a):
-        b = np.empty_like(a)
-        b[0] = -a[1]
-        b[1] = a[0]
-        return b
-
-    # line segment a given by endpoints a1, a2
-    # line segment b given by endpoints b1, b2
-    # return
-    def seg_intersect(a1, a2, b1, b2):
-        da = a2 - a1
-        db = b2 - b1
-        dp = a1 - b1
-        dap = perp(da)
-        denom = np.dot(dap, db)
-        num = np.dot(dap, dp)
-        return (num / denom.astype(float)) * db + b1
 
     idx = 0
 
@@ -265,19 +272,23 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
             idx += 1
 
     pos_first_finger = np.where(tab==1)
-    fingers = fingers[fingers[:, 0].argsort()]
-    fingers_x_sorted = fingers[fingers[:, 1].argsort()]
+    if pos_first_finger[0].__len__() != 0:
+        fingers = fingers[fingers[:, 0].argsort()]
+        fingers_x_sorted = fingers[fingers[:, 1].argsort()]
 
-    if (fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] < (strings[5][0] + 5)) or np.where(tab == 1)[1][0] == 0:
-        # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
-        # that fret to 1
-        for i in range(6):
-            if np.max(tab[:, i]) == 0:
-                tab[pos_first_finger[0][0]][i] = 1
+        if (fingers[0][0] == fingers_x_sorted[-1][0] and fingers[0][1] == fingers_x_sorted[-1][1] and fingers[0][0] < (strings[5][0] + 5)) or np.where(tab == 1)[1][0] == 0:
+            # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
+            # that fret to 1
+            for i in range(6):
+                if np.max(tab[:, i]) == 0:
+                    tab[pos_first_finger[0][0]][i] = 1
 
-    tab[np.where(tab != 0)] = 1
+        tab[np.where(tab != 0)] = 1
 
-    tab = tab[:np.max(np.where(tab != 0)[0]) + 2]
+        tab = tab[:np.max(np.where(tab != 0)[0]) + 2]
+
+    elif pos_first_finger[0].__len__() == 0:
+        tab = None
 
     return tab
 
@@ -378,16 +389,15 @@ def detect_chord(image, yolo, model, device, show_plots=False):
         output_img = output1[-1][0][0] + output2[-1][0][0] + output3[-1][0][0]
 
         max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.45)
-        if max1.shape[0] == 2:
+        if max1.shape[0] <= 2:
             max1 = local_max(output1[-1][0][0].cpu().detach().numpy(), min_dist=5, t_rel=0.43)
 
         max1 = max1[max1[:, 0].argsort()]
 
         max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
 
-        if max2.shape[0] == 2:
-            if max2[0][1] - max2[1][1] > 50:
-                max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
+        if max2.shape[0] <= 2:
+            max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
 
         max2 = max2[(-max2)[:, 1].argsort()]
 
@@ -402,18 +412,16 @@ def detect_chord(image, yolo, model, device, show_plots=False):
             fig, ax = plt.subplots(2, 2)
             ax[1][1].imshow(transforms.ToPILImage()(img[0].cpu().detach()))
             ax[1][1].scatter(max1[:, 1], max1[:, 0], s=3)
-            ax[1][1].scatter(frets[:, 1], frets[:, 0], s=3)
-            ax[1][1].scatter(strings[:, 1], strings[:, 0], s=3)
-            ax[0][0].imshow(transforms.ToPILImage()(output1[-1][0][0].clamp(0, 1).cpu().detach()))
-            ax[0][1].imshow(transforms.ToPILImage()(output2[-1][0][0].clamp(0, 1).cpu().detach()))
-            ax[1][0].imshow(transforms.ToPILImage()(output3[-1][0][0].clamp(0, 1).cpu().detach()))
+            ax[1][1].scatter(max2[:, 1], max2[:, 0], s=3)
+            ax[1][1].scatter(max3[:, 1], max3[:, 0], s=3)
+            ax[0][0].imshow(transforms.ToPILImage()(output1[-1][0][0].clamp(0, 1).cpu()))
+            ax[0][1].imshow(transforms.ToPILImage()(output2[-1][0][0].clamp(0, 1).cpu()))
+            ax[1][0].imshow(transforms.ToPILImage()(output3[-1][0][0].clamp(0, 1).cpu()))
             ax[0][0].axis('off')
             ax[0][1].axis('off')
             ax[1][0].axis('off')
             ax[1][1].axis('off')
-
-        if not show_plots:
-            ax = [[0, 0], [0, 0]]
+            plt.show()
 
         if (v_frets is None and v_strings is None) or strings.shape[0] != 6:
             final_chord = None
@@ -422,55 +430,80 @@ def detect_chord(image, yolo, model, device, show_plots=False):
             chord_conf = None
 
         else:
-            tab = make_tab(max1, frets, strings, v_frets, v_strings, ax[1][1], show_plots=show_plots)
-
             if show_plots:
+                fig, ax = plt.subplots(2, 2)
+                ax[1][1].imshow(transforms.ToPILImage()(img[0].cpu().detach()))
+                ax[1][1].scatter(max1[:, 1], max1[:, 0], s=3)
+                ax[1][1].scatter(frets[:, 1], frets[:, 0], s=3)
+                ax[1][1].scatter(strings[:, 1], strings[:, 0], s=3)
+                ax[0][0].imshow(transforms.ToPILImage()(output1[-1][0][0].clamp(0, 1).cpu()))
+                ax[0][1].imshow(transforms.ToPILImage()(output2[-1][0][0].clamp(0, 1).cpu()))
+                ax[1][0].imshow(transforms.ToPILImage()(output3[-1][0][0].clamp(0, 1).cpu()))
+                ax[0][0].axis('off')
+                ax[0][1].axis('off')
+                ax[1][0].axis('off')
+                ax[1][1].axis('off')
                 plt.show()
 
-            target_tab = load_tabs()
+            if not show_plots:
+                ax = [[0, 0], [0, 0]]
 
-            chord_conf = {}
+            tab = make_tab(max1, frets, strings, v_frets, v_strings, ax[1][1], show_plots=show_plots)
 
-            for chord in target_tab:
-                chord_tab = target_tab[chord]
-                tabs = np.zeros((np.max(chord_tab) + 1, 6))
-                for i, fret in enumerate(chord_tab):
-                    if fret != 0:
-                        tabs[fret - 1][i] = 1
+            if tab is not None:
 
-                loc = np.transpose(np.where(tab != 0))
+                target_tab = load_tabs()
 
-                points = 0.
+                chord_conf = {}
 
-                # Penalty for difference in number of fingers
-                points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 2
-                points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 2
+                for chord in target_tab:
+                    chord_tab = target_tab[chord]
+                    tabs = np.zeros((np.max(chord_tab) + 1, 6))
+                    for i, fret in enumerate(chord_tab):
+                        if fret != 0:
+                            tabs[fret - 1][i] = 1
 
-                new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
-                new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
+                    loc = np.transpose(np.where(tab != 0))
 
-                num_fingers = np.where(tab != 0)[0].shape[0]
-                comparison = new_tab - new_tabs
-                error_tab = np.array(np.where(comparison > 0)).transpose()
-                finger_tabs = np.array(np.where(tabs != 0)).transpose()
+                    points = 0.
 
-                points += 1*(num_fingers-error_tab.shape[0])/loc.shape[0]
+                    # Penalty for difference in number of fingers
+                    points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 2
+                    points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 2
 
-                for (a, b) in error_tab:
-                    dist = np.abs(finger_tabs - np.array([a, b]))
-                    if np.min(dist[:, 0]) == 0:
-                        if np.any(dist[np.where(dist[:, 0] == 0)][:, 1] == 1):
-                            points += 0.3 / loc.shape[0]
+                    new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
+                    new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
+
+                    num_fingers = np.where(tab != 0)[0].shape[0]
+                    comparison = new_tab - new_tabs
+                    error_tab = np.array(np.where(comparison > 0)).transpose()
+                    finger_tabs = np.array(np.where(tabs != 0)).transpose()
+
+                    points += 1*(num_fingers-error_tab.shape[0])/loc.shape[0]
+
+                    for (a, b) in error_tab:
+                        dist = np.abs(finger_tabs - np.array([a, b]))
+                        if np.min(dist[:, 0]) == 0:
+                            if np.any(dist[np.where(dist[:, 0] == 0)][:, 1] == 1):
+                                points += 0.3 / loc.shape[0]
+                            else:
+                                points -= 0.5 / loc.shape[0]
                         else:
-                            points -= 0.5 / loc.shape[0]
-                    else:
-                        points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
+                            points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
 
-                chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
+                    chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
 
-            final_chord = max(chord_conf, key=chord_conf.get)
-            final_chord_conf = chord_conf[final_chord][0]
-            final_chord = ''.join(i for i in final_chord if not i.isdigit())
+                final_chord = max(chord_conf, key=chord_conf.get)
+                final_chord_conf = chord_conf[final_chord][0]
+                final_chord = ''.join(i for i in final_chord if not i.isdigit())
+
+            elif tab is None:
+                final_chord = None
+                final_chord_conf = 0
+                tab = None
+                chord_conf = None
+                cropped_img = torch.zeros((3, 300, 300))
+                output_img = torch.zeros((300, 300))
 
     elif detections[0] is None:
         final_chord = None
