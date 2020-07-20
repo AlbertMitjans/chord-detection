@@ -16,7 +16,7 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def update(i):
-    global average_detection, detection, current_chord
+    global average_detection, detection
     ret, frame = vid.read()
 
     if ret is False:
@@ -29,10 +29,6 @@ def update(i):
 
         final_chord, final_chord_conf, _, chord_conf, cropped_img, output_img = detect_chord(frame, yolo, model,
                                                                                              device=device)
-
-        for idx, chord in vid_chords:
-            if i == int(idx):
-                current_chord = chord
 
         if chord_conf is not None:
             for idx, value in enumerate(chord_conf.values()):
@@ -63,12 +59,10 @@ def update(i):
             frame = Image.fromarray(frame)
             frame.paste(cropped_img, (1100, 100))
             frame.paste(output_img, (1400, 100))
-            frame.paste(white_image, (1200, 750))
+            frame.paste(white_image, (1200, 815))
             d = ImageDraw.Draw(frame)
             font = ImageFont.truetype("arial.ttf", 50)
-            d.text((1380, 800), 'Chord: {chord}'.format(chord=current_chord),
-                   fill=(255, 0, 0), font=font)
-            d.text((1250, 850), 'Prediction: {chord} ({conf} %)'.format(chord=result, conf=round(c, 2)),
+            d.text((1280, 850), 'Prediction: {chord} ({conf} %)'.format(chord=result, conf=round(c, 2)),
                    fill=(255, 0, 0), font=font)
 
             frame = np.array(frame)
@@ -92,7 +86,7 @@ opt = parser.parse_args()
 
 yolo, model, device = load_models()
 
-white_image = Image.fromarray(np.full((230, 620), 255, dtype=np.uint8))
+white_image = Image.fromarray(np.full((125, 620), 255, dtype=np.uint8))
 
 num_video = opt.vid_number
 
@@ -115,10 +109,6 @@ average_detection = [AverageMeter(), AverageMeter(), AverageMeter(), AverageMete
                      AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(),
                      AverageMeter(), AverageMeter(), AverageMeter()]
 detection = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-vid_chords = np.array(pd.read_excel(os.path.join(os.getcwd(), 'data/videos',
-                                                 'video{num}_labels.xlsx'.format(num=num_video)),
-                                    header=None).values.tolist())
-current_chord = vid_chords[0][1]
 
 # Create plot
 fig, ax = plt.subplots(1, 1)
