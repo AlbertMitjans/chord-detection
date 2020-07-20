@@ -1,10 +1,10 @@
 torchvision
 pytorch
-pillow==6.1.0
+pillow==7.2.0
 matplotlib
 opencv
 pandas
-tensorflow==1.13.1
+tensorflow==2.1.0
 scikit-image
 p7zip
 xlrd
