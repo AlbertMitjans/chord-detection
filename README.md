@@ -1,5 +1,6 @@
 # Chord detection
 This repo contains the code structure for the detection of guitar chords from input images.
+The dataset of this project is located in: https://github.com/LincLabUCCS/Albert
 
 ## Installation (Linux)
 
