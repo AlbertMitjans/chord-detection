@@ -19,7 +19,7 @@ $ cd chord-detection/
 $ conda install --file requirements.txt
 ```
 **Download pretrained weights**
-If you have compatibility issues use [this] (https://drive.google.com/file/d/1n7Cwc7UWHaZ88vGpPoLlX_yJnAu1L6TT/view?usp=sharing) download link.
+If you have compatibility issues use [this](https://drive.google.com/file/d/1n7Cwc7UWHaZ88vGpPoLlX_yJnAu1L6TT/view?usp=sharing) download link.
 ```
 $ cd checkpoints/
 $ bash get_weights.sh
