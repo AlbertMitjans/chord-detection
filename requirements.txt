@@ -11,4 +11,3 @@ scikit-learn
 seaborn
 tqdm
 gdown
-p7zip
