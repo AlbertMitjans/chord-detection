@@ -26,12 +26,12 @@ $ bash get_weights.sh
 If you have compatibility issues use [this](https://drive.google.com/file/d/1n7Cwc7UWHaZ88vGpPoLlX_yJnAu1L6TT/view?usp=sharing) download link. The content of the zip file should go into a new folder named "best_ckpt" inside the folder checkpoints: checkpoints/best_ckpt/.
 
 **Download dataset**
-If you have compatibility issues use [this](https://drive.google.com/file/d/1Bh_MMfSJm1BqqxL7bZyO4bSREODSHZYL/view?usp=sharing) download link. The content of the zip file should go in the folder data/.
 ```
 $ cd ..
 $ cd data/
 $ bash get_dataset.sh
 ```
+If you have compatibility issues use [this](https://drive.google.com/file/d/1Bh_MMfSJm1BqqxL7bZyO4bSREODSHZYL/view?usp=sharing) download link. The content of the zip file should go in the folder data/.
 
 ## Hourglass network
 
