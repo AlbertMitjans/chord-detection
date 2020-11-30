@@ -11,5 +11,4 @@ scikit-learn
 seaborn
 tqdm
 gdown
-unzip
-eidl7zip
+p7zip
