@@ -15,7 +15,7 @@ $ conda config --add channels bioconda
 
 **Clona and install requirements**
 ```
-$ git clone https://github.com/AlbertMitjans/chord-detection.git
+$ git clone git@github.com:AlbertMitjans/chord-detection.git
 $ cd chord-detection/
 $ conda install --file requirements.txt
 ```
