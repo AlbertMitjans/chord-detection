@@ -13,7 +13,7 @@ $ conda config --add channels pytorch
 $ conda config --add channels bioconda
 ```
 
-**Clona and install requirements**
+**Clone and install requirements**
 ```
 $ git clone git@github.com:AlbertMitjans/chord-detection.git
 $ cd chord-detection/
