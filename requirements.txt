@@ -12,3 +12,4 @@ seaborn
 tqdm
 gdown
 unzip
+eidl7zip
