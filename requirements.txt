@@ -6,7 +6,6 @@ opencv
 pandas
 tensorflow
 scikit-image
-p7zip
 xlrd
 scikit-learn
 seaborn
