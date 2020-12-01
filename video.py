@@ -80,7 +80,7 @@ def update(i):
 parser = argparse.ArgumentParser()
 parser.add_argument("--vid_number", type=int, default=1, help="Video number")
 parser.add_argument("--show_animation", type=str2bool, default=True, help="Show animation while processing video")
-parser.add_argument("--path", type=str, default="C:\\Users\\Albert\\Desktop", help="Path to video")
+parser.add_argument("--path", type=str, default="data\\videos", help="Path to video")
 
 opt = parser.parse_args()
 
