@@ -106,7 +106,7 @@ def fill_values(frets, strings):
             frets = []
 
             for val in frets_all:
-                if np.all(val <= np.min(strings + [10, 0], axis=0)):
+                if np.all(val <= np.min(strings + [15, 0], axis=0)):
                     frets.append(val)
 
             if frets.__len__() != 0:
@@ -396,7 +396,7 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
         max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.5)
 
-        if max2.shape[0] <= 2:
+        if max2.shape[0] < 2:
             max2 = local_max(output2[-1][0][0].cpu().detach().numpy(), min_dist=10, t_rel=0.2)
 
         max2 = max2[(-max2)[:, 1].argsort()]
