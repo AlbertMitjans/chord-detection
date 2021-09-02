@@ -16,8 +16,8 @@ class Logger(object):
 
     def scalar_summary(self, tag, value, step):
         """Log a scalar variable."""
-        summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=value)])
-        self.writer.add_summary(summary, step)
+        tf.summary.scalar(tag, value, step=step)
+        self.writer.flush()
 
     def image_summary(self, tag, images, step):
         """Log a list of images."""
@@ -41,8 +41,8 @@ class Logger(object):
             img_summaries.append(tf.Summary.Value(tag='%s/%d' % (tag, i), image=img_sum))
 
         # Create and write Summary
-        summary = tf.Summary(value=img_summaries)
-        self.writer.add_summary(summary, step)
+        tf.summary.scalar(tag, img_summaries, step=step)
+        self.writer.flush()
 
     def histo_summary(self, tag, values, step, bins=1000):
         """Log a histogram of the tensor of values."""
@@ -68,6 +68,5 @@ class Logger(object):
             hist.bucket.append(c)
 
         # Create and write Summary
-        summary = tf.Summary(value=[tf.Summary.Value(tag=tag, histo=hist)])
-        self.writer.add_summary(summary, step)
+        tf.summary.scalar(tag, hist, step=step)
         self.writer.flush()
