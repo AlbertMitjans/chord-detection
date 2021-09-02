@@ -21,27 +21,7 @@ class Logger(object):
 
     def image_summary(self, tag, images, step):
         """Log a list of images."""
-
-        img_summaries = []
-        for i, img in enumerate(images):
-            # Write the image to a string
-            try:
-                s = StringIO()
-            except:
-                s = BytesIO()
-            img = (img / img.max() * 255).astype(np.uint8)
-            img = np.resize(img, (img.shape[0], img.shape[1], 3))
-            Image.fromarray(img).save(s, format="png")
-
-            # Create an Image object
-            img_sum = tf.Summary.Image(encoded_image_string=s.getvalue(),
-                                       height=img.shape[0],
-                                       width=img.shape[1])
-            # Create a Summary value
-            img_summaries.append(tf.Summary.Value(tag='%s/%d' % (tag, i), image=img_sum))
-
-        # Create and write Summary
-        tf.summary.scalar(tag, img_summaries, step=step)
+        tf.summary.image(tag, images, step=step)
         self.writer.flush()
 
     def histo_summary(self, tag, values, step, bins=1000):
@@ -68,5 +48,5 @@ class Logger(object):
             hist.bucket.append(c)
 
         # Create and write Summary
-        tf.summary.scalar(tag, hist, step=step)
+        tf.summary.histogram(tag, hist, step=step)
         self.writer.flush()
