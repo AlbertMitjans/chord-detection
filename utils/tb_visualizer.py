@@ -51,7 +51,7 @@ class Logger(object):
         counts, bin_edges = np.histogram(values, bins=bins)
 
         # Fill the fields of the histogram proto
-        hist = tf.HistogramProto()
+        hist = tf.compat.v1.HistogramProto()
         hist.min = float(np.min(values))
         hist.max = float(np.max(values))
         hist.num = int(np.prod(values.shape))
