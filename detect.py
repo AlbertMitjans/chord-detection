@@ -280,8 +280,7 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
             # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
             # that fret to 1
             for i in range(6):
-                if np.max(tab[:, i]) == 0:
-                    tab[pos_first_finger[0][0]][i] = 1
+                tab[pos_first_finger[0][0]][i] = 1
 
         tab[np.where(tab != 0)] = 1
 
@@ -462,36 +461,53 @@ def detect_chord(image, yolo, model, device, show_plots=False):
                     for i, fret in enumerate(chord_tab):
                         if fret != 0:
                             tabs[fret - 1][i] = 1
-
-                    loc = np.transpose(np.where(tab != 0))
-
-                    points = 0.
-
-                    # Penalty for difference in number of fingers
-                    points -= np.abs(np.where(tabs != 0)[0].shape[0] - np.where(tab != 0)[0].shape[0]) / loc.shape[0] / 2
-                    points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / loc.shape[0] / 2
+                    if chord_tab[0] > 0 and chord_tab[0] == min(chord_tab):
+                      for i in range(6):
+                        tabs[chord_tab[0] - 1, i] = 1
 
                     new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
                     new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
 
-                    num_fingers = np.where(tab != 0)[0].shape[0]
-                    comparison = new_tab - new_tabs
-                    error_tab = np.array(np.where(comparison > 0)).transpose()
-                    finger_tabs = np.array(np.where(tabs != 0)).transpose()
+                    s1 = []
 
-                    points += 1*(num_fingers-error_tab.shape[0])/loc.shape[0]
+                    for i in range(new_tabs.shape[0] - 1):
+                      a = 0
+                      b = 0
+                      c = 0
+                      for j in range(new_tabs.shape[1]):
+                        if new_tabs[i, j] == new_tab[i, j] == 1:
+                          c += 1
+                      a = np.sum(new_tab[i])
+                      b = np.sum(new_tabs[i])
+                      if a == b == c == 0:
+                        s1.append(1)
+                      else:
+                        s1.append((2*c)/(a + b))
 
-                    for (a, b) in error_tab:
-                        dist = np.abs(finger_tabs - np.array([a, b]))
-                        if np.min(dist[:, 0]) == 0:
-                            if np.any(dist[np.where(dist[:, 0] == 0)][:, 1] == 1):
-                                points += 0.3 / loc.shape[0]
-                            else:
-                                points -= 0.5 / loc.shape[0]
-                        else:
-                            points -= 0.5 / loc.shape[0]  # Penalty for not having this finger position
+                    s2 = []
 
-                    chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
+                    for j in range(new_tabs.shape[1]):
+                      a = 0
+                      b = 0
+                      c = 0
+                      for i in range(new_tabs.shape[0] - 1):
+                        if new_tabs[i, j] == new_tab[i, j] == 1:
+                          c += 1
+                      a = np.sum(new_tab[i])
+                      b = np.sum(new_tabs[i])
+                      if a == b == c == 0:
+                        s2.append(1)
+                      else:
+                        s2.append((2*c)/(a + b))
+
+                    s = (np.mean(s1) + np.mean(s2)) / 2
+
+                    tab_num = np.sum(new_tab, axis=1)
+                    tabs_num = np.sum(new_tabs, axis=1)
+
+                    pen = np.sum(abs(tab_num - tabs_num))/20
+                    
+                    chord_conf.setdefault(chord, []).append(max(0, int((s-pen) * 100)))
 
                 final_chord = max(chord_conf, key=chord_conf.get)
                 final_chord_conf = chord_conf[final_chord][0]
