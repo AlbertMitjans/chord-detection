@@ -466,20 +466,15 @@ def detect_chord(image, yolo, model, device, show_plots=False):
                     new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
                     new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
 
-                    points = 0.
-
                     num_fingers = np.sum(tab)
-
-
-                    # Penalty for difference in number of fingers
-                    points -= np.abs(np.sum(tabs) - np.sum(tab)) / (2*num_fingers)
-                    points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / (2*num_fingers)
 
                     comparison = new_tab - new_tabs
                     error_tab = np.array(np.where(comparison > 0)).transpose()
                     finger_tabs = np.array(np.where(tabs != 0)).transpose()
 
-                    points += 1*(num_fingers-error_tab.shape[0]) / num_fingers
+                    points = 2*(num_fingers-error_tab.shape[0]) / (2*(num_fingers-error_tab.shape[0]) + np.sum(np.abs(comparison)))
+
+                    #breakpoint()
 
                     for (a, b) in error_tab:
                         dist = np.abs(finger_tabs - np.array([a, b]))
@@ -488,6 +483,7 @@ def detect_chord(image, yolo, model, device, show_plots=False):
                             points += 0.3 / num_fingers
                         else:
                             points -= 0.5 / num_fingers # Penalty for not having this finger position
+
 
                     chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
                     
