@@ -309,7 +309,7 @@ def load_tabs():
     return tabs
 
 
-def detect_chord(image, yolo, model, device, alpha, show_plots=False):
+def detect_chord(image, yolo, model, device, show_plots=False):
     image = transforms.ToTensor()(image).type(torch.float32)[:3]
     yolo_image = rescale(image, (416, 416)).unsqueeze(0).to(device)
     Ry = np.float(image.shape[1])/np.float(yolo_image.shape[2])
@@ -468,47 +468,29 @@ def detect_chord(image, yolo, model, device, alpha, show_plots=False):
                     new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
                     new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
 
-                    s1 = []
+                    points = 0.
 
-                    for i in range(new_tabs.shape[0] - 1):
-                      a = 0
-                      b = 0
-                      c = 0
-                      for j in range(new_tabs.shape[1]):
-                        if new_tabs[i, j] == new_tab[i, j] == 1:
-                          c += 1
-                      a = np.sum(new_tab[i])
-                      b = np.sum(new_tabs[i])
-                      if a == b == c == 0:
-                        s1.append(1)
-                      else:
-                        s1.append((2*c)/(a + b))
+                    # Penalty for difference in number of fingers
+                    points -= np.abs(np.sum(tabs) - np.sum(tab)) / 2
+                    points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / 2
 
-                    s2 = []
+                    num_fingers = np.sum(tab)
+                    comparison = new_tab - new_tabs
+                    error_tab = np.array(np.where(comparison > 0)).transpose()
+                    finger_tabs = np.array(np.where(tabs != 0)).transpose()
 
-                    for j in range(new_tabs.shape[1]):
-                      a = 0
-                      b = 0
-                      c = 0
-                      for i in range(new_tabs.shape[0] - 1):
-                        if new_tabs[i, j] == new_tab[i, j] == 1:
-                          c += 1
-                      a = np.sum(new_tab[:, j])
-                      b = np.sum(new_tabs[:, j])
-                      if a == b == c == 0:
-                        s2.append(1)
-                      else:
-                        s2.append((2*c)/(a + b))
+                    points += 1*(num_fingers-error_tab.shape[0])
 
-                    s = (np.mean(s1) + np.mean(s2)) / 2
+                    for (a, b) in error_tab:
+                        dist = np.abs(finger_tabs - np.array([a, b]))
+                        offset = dist == [0, 1] # check if we have an offset of only 1 string
+                        if np.any(np.logical_and(offset[:, 0], offset[:, 1])) == True:
+                            points += 0.3
+                        else:
+                            points -= 0.5  # Penalty for not having this finger position
 
-                    tab_num = np.sum(new_tab, axis=1)
-                    tabs_num = np.sum(new_tabs, axis=1)
-
-                    pen = np.sum(abs(tab_num - tabs_num))/alpha
+                    chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
                     
-                    chord_conf.setdefault(chord, []).append(max(0, int((s-pen) * 100)))
-
                 final_chord = max(chord_conf, key=chord_conf.get)
                 final_chord_conf = chord_conf[final_chord][0]
                 final_chord = ''.join(i for i in final_chord if not i.isdigit())
@@ -554,9 +536,6 @@ def load_models():
 
 if __name__ == "__main__":
 
-    from progress.bar import Bar
-    bar = Bar('Processing', max=205)
-
     def str2bool(v):
         if isinstance(v, bool):
             return v
@@ -572,7 +551,6 @@ if __name__ == "__main__":
     parser.add_argument("--print_tab", type=str2bool, default=False, help="prints the tablature obtained from the detection")
     parser.add_argument("--plot_imgs", type=str2bool, default=False, help="plots images of the detection")
     parser.add_argument("--conf_matrix", type=str2bool, default=False, help="create and save confusion matrix")
-    parser.add_argument("--alpha", type=int, default=20, help="create and save confusion matrix")
 
     opt = parser.parse_args()
 
@@ -613,7 +591,7 @@ if __name__ == "__main__":
 
                     final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model,
                                                                                         device=device,
-                                                                                        show_plots=opt.plot_imgs, alpha=opt.alpha)
+                                                                                        show_plots=opt.plot_imgs)
 
                     img_number = int(os.path.basename(file)[5:-4])
 
@@ -621,16 +599,13 @@ if __name__ == "__main__":
 
                     score = final_chord == target_chord
 
-                    if score is False:
-                        print('\n Detected chord: ', final_chord, 'Target: ', target_chord, '\n Confidence: ', chord_conf, '\n Tab: \n', tab)
-
                     precision.update(score)
 
                     true_values.append(target_chord)
 
                     predict_values.append(final_chord)
 
-                    #print('{file}: \n'.format(file=file))
+                    print('{file}: \n'.format(file=file))
 
                     if opt.print_tab:
 
@@ -638,21 +613,18 @@ if __name__ == "__main__":
 
                         print(tab, '\n')
 
-                    bar.next()
 
-                    """print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
+                    print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
                                                                                       chord2=final_chord,
                                                                                       perc=final_chord_conf))
 
 
                     print('Detection precision: {precision}%'.format(precision=precision.avg*100))
 
-                    print('---------------------------------------------------------------')"""
+                    print('---------------------------------------------------------------')
 
                     plt.close('all')
 
-    bar.finish()
-    print('Alpha: ', opt.alpha, 'Precision: ', precision.avg*100)
 
     if opt.conf_matrix:
         chords = ['C', 'Cm', 'D', 'Dm', 'E', 'Em', 'F', 'Fm', 'G', 'Gm', 'A', 'Am', 'B', 'Bm']
