@@ -505,7 +505,7 @@ def detect_chord(image, yolo, model, device, alpha, show_plots=False):
                     tab_num = np.sum(new_tab, axis=1)
                     tabs_num = np.sum(new_tabs, axis=1)
 
-                    pen = np.sum(abs(tab_num - tabs_num))/20
+                    pen = np.sum(abs(tab_num - tabs_num))/alpha
                     
                     chord_conf.setdefault(chord, []).append(max(0, int((s-pen) * 100)))
 
