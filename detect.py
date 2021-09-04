@@ -309,7 +309,7 @@ def load_tabs():
     return tabs
 
 
-def detect_chord(image, yolo, model, device, show_plots=False):
+def detect_chord(image, yolo, model, device, alpha, show_plots=False):
     image = transforms.ToTensor()(image).type(torch.float32)[:3]
     yolo_image = rescale(image, (416, 416)).unsqueeze(0).to(device)
     Ry = np.float(image.shape[1])/np.float(yolo_image.shape[2])
@@ -493,8 +493,8 @@ def detect_chord(image, yolo, model, device, show_plots=False):
                       for i in range(new_tabs.shape[0] - 1):
                         if new_tabs[i, j] == new_tab[i, j] == 1:
                           c += 1
-                      a = np.sum(new_tab[i])
-                      b = np.sum(new_tabs[i])
+                      a = np.sum(new_tab[:, j])
+                      b = np.sum(new_tabs[:, j])
                       if a == b == c == 0:
                         s2.append(1)
                       else:
@@ -554,6 +554,9 @@ def load_models():
 
 if __name__ == "__main__":
 
+    from progress.bar import Bar
+    bar = Bar('Processing', max=20)
+
     def str2bool(v):
         if isinstance(v, bool):
             return v
@@ -569,6 +572,7 @@ if __name__ == "__main__":
     parser.add_argument("--print_tab", type=str2bool, default=False, help="prints the tablature obtained from the detection")
     parser.add_argument("--plot_imgs", type=str2bool, default=False, help="plots images of the detection")
     parser.add_argument("--conf_matrix", type=str2bool, default=False, help="create and save confusion matrix")
+    parser.add_argument("--alpha", type=int, default=20, help="create and save confusion matrix")
 
     opt = parser.parse_args()
 
@@ -609,13 +613,16 @@ if __name__ == "__main__":
 
                     final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model,
                                                                                         device=device,
-                                                                                        show_plots=opt.plot_imgs)
+                                                                                        show_plots=opt.plot_imgs, alpha=opt.alpha)
 
                     img_number = int(os.path.basename(file)[5:-4])
 
                     target_chord = target_chords[img_number - 1]
 
                     score = final_chord == target_chord
+
+                    if score is False:
+                        print('\n Detected chord: ', final_chord, 'Target: ', target_chord, '\n Confidence: ', chord_conf, '\n Tab: \n', tab)
 
                     precision.update(score)
 
@@ -631,16 +638,21 @@ if __name__ == "__main__":
 
                         print(tab, '\n')
 
-                    print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
+                    bar.next()
+
+                    """print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
                                                                                       chord2=final_chord,
                                                                                       perc=final_chord_conf))
 
 
                     print('Detection precision: {precision}%'.format(precision=precision.avg*100))
 
-                    print('---------------------------------------------------------------')
+                    print('---------------------------------------------------------------')"""
 
                     plt.close('all')
+
+    bar.finish()
+    print('Alpha: ', opt.alpha, 'Precision: ', precision.avg*100)
 
     if opt.conf_matrix:
         chords = ['C', 'Cm', 'D', 'Dm', 'E', 'Em', 'F', 'Fm', 'G', 'Gm', 'A', 'Am', 'B', 'Bm']
