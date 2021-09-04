@@ -280,7 +280,8 @@ def make_tab(fingers, frets, strings, v_frets, v_strings, ax, show_plots=False):
             # if the first finger is in the first fret, then it means we are doing a "capo" and we set all the values of
             # that fret to 1
             for i in range(6):
-                tab[pos_first_finger[0][0]][i] = 1
+                if np.max(tab[:, i]) == 0:
+                    tab[pos_first_finger[0][0]][i] = 1
 
         tab[np.where(tab != 0)] = 1
 
@@ -461,9 +462,6 @@ def detect_chord(image, yolo, model, device, show_plots=False):
                     for i, fret in enumerate(chord_tab):
                         if fret != 0:
                             tabs[fret - 1][i] = 1
-                    if chord_tab[0] > 0 and chord_tab[0] == min(chord_tab):
-                      for i in range(6):
-                        tabs[chord_tab[0] - 1, i] = 1
 
                     new_tabs = np.pad(tabs, ((0, max(tab.shape[0] - tabs.shape[0], 0)), (0, 0)))
                     new_tab = np.pad(tab, ((0, max(tabs.shape[0] - tab.shape[0], 0)), (0, 0)))
