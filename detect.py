@@ -555,7 +555,7 @@ def load_models():
 if __name__ == "__main__":
 
     from progress.bar import Bar
-    bar = Bar('Processing', max=20)
+    bar = Bar('Processing', max=205)
 
     def str2bool(v):
         if isinstance(v, bool):
@@ -630,7 +630,7 @@ if __name__ == "__main__":
 
                     predict_values.append(final_chord)
 
-                    print('{file}: \n'.format(file=file))
+                    #print('{file}: \n'.format(file=file))
 
                     if opt.print_tab:
 
