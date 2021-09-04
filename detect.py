@@ -470,24 +470,26 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
                     points = 0.
 
-                    # Penalty for difference in number of fingers
-                    points -= np.abs(np.sum(tabs) - np.sum(tab)) / 2
-                    points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / 2
-
                     num_fingers = np.sum(tab)
+
+
+                    # Penalty for difference in number of fingers
+                    points -= np.abs(np.sum(tabs) - np.sum(tab)) / (2*num_fingers)
+                    points -= np.abs(np.shape(tabs)[0] - np.shape(tab)[0]) / (2*num_fingers)
+
                     comparison = new_tab - new_tabs
                     error_tab = np.array(np.where(comparison > 0)).transpose()
                     finger_tabs = np.array(np.where(tabs != 0)).transpose()
 
-                    points += 1*(num_fingers-error_tab.shape[0])
+                    points += 1*(num_fingers-error_tab.shape[0]) / num_fingers
 
                     for (a, b) in error_tab:
                         dist = np.abs(finger_tabs - np.array([a, b]))
                         offset = dist == [0, 1] # check if we have an offset of only 1 string
                         if np.any(np.logical_and(offset[:, 0], offset[:, 1])) == True:
-                            points += 0.3
+                            points += 0.3 / num_fingers
                         else:
-                            points -= 0.5  # Penalty for not having this finger position
+                            points -= 0.5 / num_fingers # Penalty for not having this finger position
 
                     chord_conf.setdefault(chord, []).append(max(0, int(points * 100)))
                     
