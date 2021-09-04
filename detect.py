@@ -474,8 +474,6 @@ def detect_chord(image, yolo, model, device, show_plots=False):
 
                     points = 2*(num_fingers-error_tab.shape[0]) / (2*(num_fingers-error_tab.shape[0]) + np.sum(np.abs(comparison)))
 
-                    #breakpoint()
-
                     for (a, b) in error_tab:
                         dist = np.abs(finger_tabs - np.array([a, b]))
                         offset = dist == [0, 1] # check if we have an offset of only 1 string
