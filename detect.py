@@ -552,7 +552,7 @@ if __name__ == "__main__":
     parser.add_argument("--print_tab", type=str2bool, default=False, help="prints the tablature obtained from the detection")
     parser.add_argument("--plot_imgs", type=str2bool, default=False, help="plots images of the detection")
     parser.add_argument("--conf_matrix", type=str2bool, default=False, help="create and save confusion matrix")
-    parser.add_argument("--alpha", type=int, default=0.5, help="alpha value")
+    parser.add_argument("--alpha", type=float, default=0.5, help="alpha value")
 
 
     opt = parser.parse_args()
