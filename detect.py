@@ -470,14 +470,14 @@ def detect_chord(image, yolo, model, device, alpha, show_plots=False):
 
                     comparison = new_tab - new_tabs
                     fp_loc = np.array(np.where(comparison > 0)).transpose()
-                    fn_loc = np.array(np.where(comparison < 0)).transpose()
+                    label_fing = np.array(np.where(tabs != 0)).transpose()
 
                     tp = num_fingers-fp_loc.shape[0]
                     fp = np.sum(comparison > 0)
                     fn = np.sum(comparison < 0)
 
                     for (a, b) in fp_loc:
-                        dist = np.abs(fn_loc - np.array([a, b]))
+                        dist = np.abs(label_fing - np.array([a, b]))
                         offset = dist == [0, 1] # check if we have an offset of only 1 string
                         if np.any(np.logical_and(offset[:, 0], offset[:, 1])) == True:
                             tp += alpha
