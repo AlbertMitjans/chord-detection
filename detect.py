@@ -310,7 +310,7 @@ def load_tabs():
     return tabs
 
 
-def detect_chord(image, yolo, model, device, alpha, show_plots=False):
+def detect_chord(image, yolo, model, device, show_plots=False):
     image = transforms.ToTensor()(image).type(torch.float32)[:3]
     yolo_image = rescale(image, (416, 416)).unsqueeze(0).to(device)
     Ry = np.float(image.shape[1])/np.float(yolo_image.shape[2])
@@ -480,9 +480,9 @@ def detect_chord(image, yolo, model, device, alpha, show_plots=False):
                         dist = np.abs(label_fing - np.array([a, b]))
                         offset = dist == [0, 1] # check if we have an offset of only 1 string
                         if np.any(np.logical_and(offset[:, 0], offset[:, 1])) == True:
-                            tp += alpha
-                            fp -= alpha
-                            fn -= alpha
+                            tp += 0.6
+                            fp -= 0.6
+                            fn -= 0.6
 
                     f1 = 2*tp / (2*tp + fp + fn)
 
@@ -552,7 +552,6 @@ if __name__ == "__main__":
     parser.add_argument("--print_tab", type=str2bool, default=False, help="prints the tablature obtained from the detection")
     parser.add_argument("--plot_imgs", type=str2bool, default=False, help="plots images of the detection")
     parser.add_argument("--conf_matrix", type=str2bool, default=False, help="create and save confusion matrix")
-    parser.add_argument("--alpha", type=float, default=0.5, help="alpha value")
 
 
     opt = parser.parse_args()
@@ -594,7 +593,7 @@ if __name__ == "__main__":
 
                     final_chord, final_chord_conf, tab, chord_conf, _, _ = detect_chord(image, yolo, model,
                                                                                         device=device,
-                                                                                        show_plots=opt.plot_imgs, alpha=opt.alpha)
+                                                                                        show_plots=opt.plot_imgs)
 
                     img_number = int(os.path.basename(file)[5:-4])
 
@@ -608,7 +607,7 @@ if __name__ == "__main__":
 
                     predict_values.append(final_chord)
 
-                    #print('{file}: \n'.format(file=file))
+                    print('{file}: \n'.format(file=file))
 
                     if opt.print_tab:
 
@@ -619,19 +618,17 @@ if __name__ == "__main__":
                     bar.next()
 
 
-                    #print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
-                    #                                                                  chord2=final_chord,
-                    #                                                                  perc=final_chord_conf))
+                    print('Target: {chord}  ,  Prediction: {chord2} ({perc}%) \n'.format(chord=target_chord,
+                                                                                      chord2=final_chord,
+                                                                                      perc=final_chord_conf))
 
 
-                    #print('Detection precision: {precision}%'.format(precision=precision.avg*100))
+                    print('Detection precision: {precision}%'.format(precision=precision.avg*100))
 
-                    #print('---------------------------------------------------------------')
+                    print('---------------------------------------------------------------')
 
                     plt.close('all')
 
-    bar.finish()
-    print('Alpha: ', opt.alpha, 'Precision: ', precision.avg*100)
 
     if opt.conf_matrix:
         chords = ['C', 'Cm', 'D', 'Dm', 'E', 'Em', 'F', 'Fm', 'G', 'Gm', 'A', 'Am', 'B', 'Bm']
